@@ -24,7 +24,7 @@ operator-sdk init —domain k-pipe.cloud —repo github.com/k-pipe/pipeline-oper
 ```
 
 This extended [go.mod](./go.mod) (setting go version down to 1.20 and adding a bunch of dependencies).
-Furthermore it created the following files:
+Furthermore it created the following files and sub-folders:
  * [.dockerignore](./.dockerignore)
  * [.gitignore](./.gitignore)
  * [.golangci.yml](./.golangci.yml)
@@ -32,6 +32,9 @@ Furthermore it created the following files:
  * [go.sum](./go.sum)
  * [Makefile](./Makefile)
  * [PROJECT](./PROJECT)
+ * [cmd](./cmd)
+ * [config](./config)
+ * [hack](./hack)
 
 ## Background
 
