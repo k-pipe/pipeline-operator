@@ -20,7 +20,7 @@ go mod init example.com/m/v2
 This created a simple `go.mod`.
 
 ```
-operator-sdk init —domain k-pipe.cloud —repo github.com/k-pipe/pipeline-operator.git 
+operator-sdk init —domain k-pipe.cloud —repo github.com/k-pipe/pipeline-operator.git —plugins=go/v4-alpha
 ```
 
 This extended [go.mod](./go.mod) (setting go version down to 1.20 and adding a bunch of dependencies).
@@ -35,6 +35,13 @@ Furthermore it created the following files and sub-folders:
  * [cmd](./cmd)
  * [config](./config)
  * [hack](./hack)
+ * [test](./test)
+
+The following command was used to create a CRD for the pipeline resource:
+
+```
+operator-sdk create api --group apps --version v1 --kind Pipeline --resource --controller
+```
 
 ## Background
 
