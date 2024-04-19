@@ -40,7 +40,7 @@ Furthermore it created the following files and sub-folders:
 The following command was used to create a CRD for the pipeline resource:
 
 ```
-operator-sdk create api --group apps --version v1 --kind Pipeline --resource --controller
+operator-sdk create api --group apps --version v1alpha1 --kind Pipeline --resource --controller
 ```
 
 ## Background

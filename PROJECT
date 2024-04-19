@@ -10,4 +10,14 @@ plugins:
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: pipeline-operator
 repo: example.com/m/v2
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: my.domain
+  group: apps
+  kind: Pipeline
+  path: example.com/m/v2/api/v1alpha1
+  version: v1alpha1
 version: "3"
