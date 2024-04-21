@@ -5,7 +5,7 @@ git checkout master
 echo "Installing"
 sudo apt-get update
 sudo apt-get upgrade
-sudo apt-get install go-lang
+sudo apt-get install golang
 ls -l /usr/local/go
 chmod u+x /usr/local/go
 sudo make install
