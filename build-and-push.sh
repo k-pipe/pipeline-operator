@@ -3,6 +3,9 @@ git clone https://github.com/operator-framework/operator-sdk
 cd operator-sdk
 git checkout master
 echo "Installing"
+apt-get update
+apt-get upgrade
+apt-get install go-lang
 ls -l /usr/local/go
 chmod u+x /usr/local/go
 sudo make install
