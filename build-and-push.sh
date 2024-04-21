@@ -50,5 +50,11 @@ echo "====================="
 echo ""
 mkdir -p config/manifests/bases
 cp ../go.clusterserviceversion.yaml config/manifests/bases/
-make bundle IMG="kpipe/nginx-operator:v0.0.8"
-#RUN make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.1"
+ls -l config/manifests/bases/
+make bundle IMG="kpipe/nginx-operator:v0.0.8" --no-interactive
+echo ""
+echo "====================="
+echo "Build & Push bundle  "
+echo "====================="
+echo ""
+make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.8"
