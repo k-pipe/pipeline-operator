@@ -3,14 +3,15 @@ echo "============="
 echo "Installing go"
 echo "============="
 echo ""
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install golang
+wget https://dl.google.com/go/go1.21.linux-amd64.tar.gz
+sudo tar -xvf go1.21.linux-amd64.tar.gz
+sudo mv go /usr/local
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+export GOBIN=/usr/local/go/bin/
 go version
 which go
-ls -l /usr/bin/go
-GOBIN=/usr/lib/go-1.18/bin/
-export GOBIN=/usr/lib/go-1.18/bin/
 echo ""
 echo "===================="
 echo "Checking out sources"
@@ -24,9 +25,6 @@ echo "====================="
 echo "Building operator-sdk"
 echo "====================="
 echo ""
-echo Path $PWD
-echo GOBIN $GOBIN
-which make
 make install
 echo ""
 echo "====================="
