@@ -1,14 +1,34 @@
-export GOBIN=/usr/local/go/bin
-git clone https://github.com/operator-framework/operator-sdk
-cd operator-sdk
-git checkout master
-echo "Installing"
+echo ""
+echo "============="
+echo "Installing go"
+echo "============="
+echo ""
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get install golang
-ls -l /usr/local/go
-chmod u+x /usr/local/go
+go version
+which go
+export GOBIN=/usr/local/go/bin
+echo ""
+echo "===================="
+echo "Checking out sources"
+echo "===================="
+echo ""
+git clone https://github.com/operator-framework/operator-sdk
+cd operator-sdk
+git checkout master
+echo ""
+echo "====================="
+echo "Building operator-sdk"
+echo "====================="
+echo ""
 sudo make install
+echo ""
+echo "====================="
+echo "Creating api         "
+echo "====================="
+echo ""
+
 # https://docs.docker.com/engine/install/ubuntu/ \
 #RUN apt-get install -y sudo \
 # && curl -fsSL https://get.docker.com -o get-docker.sh \
