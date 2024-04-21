@@ -1,0 +1,49 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: go.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: This kubernetes operator orchestrates the execution of a hierarchy
+    of directed acyclic graphs ("DAG"s, aka. pipelines) in sequences of kubernetes
+    jobs
+  displayName: Pipeline Orchestration Kubernetes Operator
+  icon:
+    - base64data: ""
+      mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+    - supported: false
+      type: OwnNamespace
+    - supported: false
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: true
+      type: AllNamespaces
+  keywords:
+    - pipeline
+    - orchestration
+    - dag
+    - etl
+    - elt
+    - processing
+  links:
+    - name: Go
+      url: https://go.domain
+  maintainers:
+    - email: j@kneissler.com
+      name: Jan Kneissler
+  maturity: alpha
+  provider:
+    name: k-pipe
+    url: https://k-p�ipe.cloud
+  version: 0.0.0

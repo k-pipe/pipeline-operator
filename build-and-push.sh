@@ -48,5 +48,6 @@ echo "====================="
 echo "Creating bundle      "
 echo "====================="
 echo ""
+cp ../go.clusterserviceversion.yaml config/manifests/bases/
 make bundle IMG="kpipe/nginx-operator:v0.0.8"
 #RUN make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.1"
