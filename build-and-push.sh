@@ -27,7 +27,7 @@ echo ""
 echo Path $PWD
 echo GOBIN $GOBIN
 which make
-sudo make install
+make install
 echo ""
 echo "====================="
 echo "Creating api         "
