@@ -2,7 +2,10 @@ export GOBIN=/usr/local/go/bin
 git clone https://github.com/operator-framework/operator-sdk
 cd operator-sdk
 git checkout master
-make install
+echo "Installing"
+ls -l /usr/local/go
+chmod u+x /usr/local/go
+sudo make install
 # https://docs.docker.com/engine/install/ubuntu/ \
 #RUN apt-get install -y sudo \
 # && curl -fsSL https://get.docker.com -o get-docker.sh \
