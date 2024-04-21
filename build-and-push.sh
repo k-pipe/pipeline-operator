@@ -9,6 +9,7 @@ sudo apt-get install golang
 go version
 which go
 ls -l /usr/bin/go
+GOBIN=/usr/lib/go-1.18/bin/
 export GOBIN=/usr/lib/go-1.18/bin/
 echo ""
 echo "===================="
@@ -23,6 +24,9 @@ echo "====================="
 echo "Building operator-sdk"
 echo "====================="
 echo ""
+echo Path $PWD
+echo GOBIN $GOBIN
+which make
 sudo make install
 echo ""
 echo "====================="
