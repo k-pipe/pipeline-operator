@@ -30,15 +30,17 @@ ls -l $GOBIN
 make install
 echo ""
 echo "====================="
+echo "Init operator        "
+echo "====================="
+echo ""
+mkdir operator
+cd operator
+operator-sdk init --domain kpipe --plugins helm
+echo ""
+echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-
-# https://docs.docker.com/engine/install/ubuntu/ \
-#RUN apt-get install -y sudo \
-# && curl -fsSL https://get.docker.com -o get-docker.sh \
-# && sudo sh ./get-docker.sh
-operator-sdk init --domain kpipe --plugins helm
 operator-sdk create api --group demo --version v1alpha1 --kind Nginx \
 #RUN make bundle IMG="kpipe/nginx-operator:v0.0.1"  # give some input here
 #RUN make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.1"
