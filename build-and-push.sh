@@ -1,4 +1,3 @@
-Dockerfile# Build the manager binary
 export GOBIN=/usr/local/go/bin
 git clone https://github.com/operator-framework/operator-sdk
 cd operator-sdk \
