@@ -9,7 +9,7 @@ sudo apt-get install golang
 go version
 which go
 ls -l /usr/bin/go
-export GOBIN=/usr/local/go/bin
+export GOBIN=/usr/lib/go-1.18/bin/
 echo ""
 echo "===================="
 echo "Checking out sources"
