@@ -51,7 +51,9 @@ echo ""
 mkdir -p config/manifests/bases
 cp ../go.clusterserviceversion.yaml config/manifests/bases/
 ls -l config/manifests/bases/
-make bundle IMG="kpipe/nginx-operator:v0.0.8" --interactive=false
+operator-sdk  generate kustomize manifests --interactive=false
+ls -l config/manifests/bases/
+make bundle IMG="kpipe/nginx-operator:v0.0.8"
 echo ""
 echo "====================="
 echo "Build & Push bundle  "
