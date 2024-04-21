@@ -8,6 +8,7 @@ sudo apt-get upgrade
 sudo apt-get install golang
 go version
 which go
+ls -l /usr/bin/go
 export GOBIN=/usr/local/go/bin
 echo ""
 echo "===================="
