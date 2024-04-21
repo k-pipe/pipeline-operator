@@ -42,11 +42,11 @@ echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-operator-sdk create api --group demo --version v1alpha1 --kind Nginx \
+operator-sdk create api --group demo --version v1alpha1 --kind Nginx
 echo ""
 echo "====================="
 echo "Creating bundle      "
 echo "====================="
 echo ""
-RUN make bundle IMG="kpipe/nginx-operator:v0.0.8"
+make bundle IMG="kpipe/nginx-operator:v0.0.8"
 #RUN make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.1"
