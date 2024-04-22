@@ -49,7 +49,7 @@ echo "Creating bundle      "
 echo "====================="
 echo ""
 mkdir -p config/manifests/bases
-cp ../go.clusterserviceversion.yaml config/manifests/bases/
+cp ../operator.clusterserviceversion.yaml config/manifests/bases/
 ls -l config/manifests/bases/
 operator-sdk  generate kustomize manifests --interactive=false
 ls -l config/manifests/bases/
