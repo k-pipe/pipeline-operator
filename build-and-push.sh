@@ -72,7 +72,7 @@ echo "======================="
 echo "Deploy to test-cluster "
 echo "======================="
 echo ""
-echo '$SERVICE_ACCOUNT_JSON_KEY' > key.json
+echo "$SERVICE_ACCOUNT_JSON_KEY" > key.json
 grep -c "" key.json
 echo Key:
 cat key.json
