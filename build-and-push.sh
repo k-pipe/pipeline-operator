@@ -72,5 +72,6 @@ echo "======================="
 echo "Deploy to test-cluster "
 echo "======================="
 echo ""
+gcloud  container clusters get-credentials k-pipe-runner --region europe-west3
 make deploy IMG="kpipe/operator-bundle:$BUNDLE_VERSION"
 
