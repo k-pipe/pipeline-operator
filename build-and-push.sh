@@ -72,7 +72,7 @@ echo "======================="
 echo "Deploy to test-cluster "
 echo "======================="
 echo ""
-echo "$SERVICE_ACCOUNT_JSON_KEY" > key.json
+echo '$SERVICE_ACCOUNT_JSON_KEY' > key.json
 grep -c "" key.json
 gcloud auth activate-service-account github-ci-cd@k-pipe-test-system.iam.gserviceaccount.com --key-file=./key.json --project=k-pipe-test-system
 gcloud  container clusters get-credentials k-pipe-runner --region europe-west3
