@@ -1,10 +1,13 @@
+GO_VERSION=1.22.2
+BUNDLE_VERSION=v0.0.9
 echo ""
 echo "============="
 echo "Installing go"
 echo "============="
 echo ""
-wget -nv https://go.dev/dl/go1.22.2.linux-amd64.tar.gz
-sudo tar -xvf go1.22.2.linux-amd64.tar.gz > /dev/null
+echo "Go version:" $GO_VERSION
+wget -nv https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz
+sudo tar -xvf go$GO_VERSION.linux-amd64.tar.gz > /dev/null
 sudo mv go /usr/local
 export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
@@ -53,7 +56,7 @@ cp ../operator.clusterserviceversion.yaml config/manifests/bases/
 ls -l config/manifests/bases/
 #operator-sdk  generate kustomize manifests --interactive=false
 #ls -l config/manifests/bases/
-make bundle IMG="kpipe/nginx-operator:v0.0.8"
+make bundle IMG="kpipe/nginx-operator:$BUNDLE_VERSION"
 echo "============================"
 echo "  Logging in to dockerhub"
 echo "============================"
@@ -63,4 +66,11 @@ echo "====================="
 echo "Build & Push bundle  "
 echo "====================="
 echo ""
-make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.8"
+make bundle-build bundle-push IMG="kpipe/nginx-operator:$BUNDLE_VERSION"
+echo ""
+echo "======================="
+echo "Deploy to test-cluster "
+echo "======================="
+echo ""
+make deploy IMG="kpipe/operator-bundle:$BUNDLE_VERSION"
+
