@@ -75,7 +75,7 @@ echo ""
 echo $SERVICE_ACCOUNT_JSON_KEY > key.json
 echo "Json key has" `grep -c "" key.json` "lines"
 gcloud auth activate-service-account github-ci-cd@k-pipe-test-system.iam.gserviceaccount.com --key-file=key.json --project=k-pipe-test-system
-gcloud components install gke-gcloud-auth-plugin
+sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
 gcloud  container clusters get-credentials k-pipe-runner --region europe-west3
 make deploy IMG="kpipe/operator-bundle:$BUNDLE_VERSION"
 
