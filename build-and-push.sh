@@ -51,9 +51,13 @@ echo ""
 mkdir -p config/manifests/bases
 cp ../operator.clusterserviceversion.yaml config/manifests/bases/
 ls -l config/manifests/bases/
-operator-sdk  generate kustomize manifests --interactive=false
-ls -l config/manifests/bases/
+#operator-sdk  generate kustomize manifests --interactive=false
+#ls -l config/manifests/bases/
 make bundle IMG="kpipe/nginx-operator:v0.0.8"
+echo "============================"
+echo "  Logging in to dockerhub"
+echo "============================"
+docker login --username kpipe --password $DOCKERHUB_PUSH_TOKEN
 echo ""
 echo "====================="
 echo "Build & Push bundle  "
