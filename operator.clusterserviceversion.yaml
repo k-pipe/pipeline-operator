@@ -45,5 +45,5 @@ spec:
   maturity: alpha
   provider:
     name: k-pipe
-    url: https://k-p�ipe.cloud
+    url: https://k-pipe.cloud
   version: 0.0.0
