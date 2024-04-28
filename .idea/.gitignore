@@ -7,3 +7,7 @@
 /dataSources/
 /dataSources.local.xml
 .idea
+/git_toolbox_prj.xml
+/modules.xml
+/pipeline-operator.iml
+/vcs.xml
