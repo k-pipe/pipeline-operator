@@ -1,5 +1,30 @@
 # pipeline-operator
 
+Follow tutorial: https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/
+
+```
+operator-sdk init --domain kpipe --plugins helm 
+operator-sdk create api --group demo --version v1alpha1 --kind Nginx
+make docker-build docker-push IMG="kpipe/nginx-operator:v0.0.1"
+operator-sdk olm install
+make bundle IMG="kpipe/nginx-operator:v0.0.1"  # give some input here
+make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.1"
+```
+
+To use it in kpipe test cluster
+
+```
+gcloud config set account j@kneissler.com
+gcloud auth application-default set-quota-project k-pipe-test-system
+gcloud config set project k-pipe-test-system
+gcloud container clusters get-credentials k-pipe-runner --region europe-west3
+gcloud projects add-iam-policy-binding k-pipe-test-system \
+  --member=user:j@kneissler.com \
+  --role=roles/container.admin
+make deploy IMG="kpipe/nginx-operator:v0.0.1"
+```
+
+
 
 ## Creation 
 
@@ -48,3 +73,4 @@ operator-sdk create api --group apps --version v1alpha1 --kind Pipeline --resour
 As introduction to kubernetes operators can be found here: https://shahin-mahmud.medium.com/write-your-first-kubernetes-operator-in-go-177047337eae
 Another medium article that was helpful in setting this up: https://www.faizanbashir.me/guide-to-create-kubernetes-operator-with-golang
 
+Note: example operator hosted as helm chart on github: https://backaged.github.io/tdset-operator/
