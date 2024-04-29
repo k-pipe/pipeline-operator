@@ -41,13 +41,15 @@ echo "====================="
 echo ""
 mkdir operator
 cd operator
-operator-sdk init --domain kpipe --plugins helm
+#operator-sdk init --domain kpipe --plugins helm
+operator-sdk create api --group cache --version v1alpha1 --kind Memcached --resource --controller
 echo ""
 echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-operator-sdk create api --group demo --version v1alpha1 --kind Nginx
+#operator-sdk create api --group demo --version v1alpha1 --kind Nginx
+operator-sdk create api --group cache --version v1alpha1 --kind Memcached --resource --controller
 echo ""
 echo "====================="
 echo "Creating bundle      "
