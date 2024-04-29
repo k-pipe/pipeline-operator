@@ -42,7 +42,7 @@ echo ""
 mkdir operator
 cd operator
 #operator-sdk init --domain kpipe --plugins helm
-operator-sdk create api --group cache --version v1alpha1 --kind Memcached --resource --controller
+operator-sdk init --domain example.com --repo github.com/example/memcached-operator
 echo ""
 echo "====================="
 echo "Creating api         "
