@@ -1,4 +1,4 @@
-GO_VERSION=1.22.2
+GO_VERSION=1.21.9
 BUNDLE_VERSION=v0.0.9
 echo ""
 echo "============="
