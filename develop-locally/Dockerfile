@@ -34,10 +34,15 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
  && sudo apt-get install -y google-cloud-cli google-cloud-sdk-gke-gcloud-auth-plugin kubectl
 ENV USE_GKE_GCLOUD_AUTH_PLUGIN=True
 ENV DOMAIN=rs
+RUN mkdir /operator
+WORKDIR /operator
 RUN operator-sdk init --domain $DOMAIN --repo github.com/BackAged/tdset-operator --plugins=go.kubebuilder.io/v4
 RUN operator-sdk create api --group schedule --version v1 --kind TDSet --resource --controller
-
-ADD create-operator.sh /
-ADD source /source
+ADD /source/api/* /operator/api/v1/
+RUN make generate
+RUN make manifests
+ADD /source/controller/* /operator/internal/controller
+RUN make build
+ADD run-operator.sh /operator
 
 
