@@ -1,11 +1,14 @@
 
 FROM ubuntu
+ENV GO_VERSION=1.21.9
+ENV BUNDLE_VERSION=v0.0.9
+#
+# install basic tools
+#
 RUN apt-get update && apt-get install -y wget sudo make git curl
 #
 # install go
 #
-ENV GO_VERSION=1.22.2
-ENV BUNDLE_VERSION=v0.0.9
 RUN wget -nv https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz \
  && sudo tar -xvf go$GO_VERSION.linux-amd64.tar.gz > /dev/null \
  && sudo mv go /usr/local \
@@ -30,5 +33,11 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
  && sudo apt update \
  && sudo apt-get install -y google-cloud-cli google-cloud-sdk-gke-gcloud-auth-plugin kubectl
 ENV USE_GKE_GCLOUD_AUTH_PLUGIN=True
+ENV DOMAIN=rs
+RUN operator-sdk init --domain $DOMAIN --repo github.com/BackAged/tdset-operator --plugins=go.kubebuilder.io/v4
+RUN operator-sdk create api --group schedule --version v1 --kind TDSet --resource --controller
+
+ADD create-operator.sh /
+ADD source /source
 
 
