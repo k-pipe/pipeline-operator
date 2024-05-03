@@ -74,8 +74,8 @@ echo ""
 #mkdir -p config/manifests/bases
 #cp ../operator.clusterserviceversion.yaml config/manifests/bases/
 ls -l config/manifests/bases/
-#operator-sdk  generate kustomize manifests --interactive=false
-#ls -l config/manifests/bases/
+operator-sdk  generate kustomize manifests --interactive=false
+ls -l config/manifests/bases/
 make bundle IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
 echo "============================"
 echo "  Logging in to dockerhub"
