@@ -53,6 +53,7 @@ echo "Adding api sources   "
 echo "====================="
 echo ""
 cp ../develop-locally/source/api/* api/v1/
+ls -l api/v1
 echo ""
 echo "====================="
 echo "Generating manifests "
@@ -66,6 +67,7 @@ echo "Adding controller sources "
 echo "=========================="
 echo ""
 cp ../develop-locally/source/controller/* internal/controller
+ls -l internal/controller
 echo ""
 echo "====================="
 echo "Building             "
