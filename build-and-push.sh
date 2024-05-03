@@ -1,5 +1,5 @@
 GO_VERSION=1.21.9
-BUNDLE_VERSION=v0.0.9
+BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
 REPO=github.com/k-pipe/operator
 echo ""
