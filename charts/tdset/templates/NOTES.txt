@@ -1,1 +1,1 @@
-Pipeline controller v0.0.5 is installed.
+Pipeline controller v0.0.1 is installed.
