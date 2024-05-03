@@ -1,12 +1,12 @@
-apiVersion: schedule.k-pipe.cloud/v1
+apiVersion: schedule.kpipe/v1
 kind: TDSet
 metadata:
   labels:
     app.kubernetes.io/name: tdset-sample
     app.kubernetes.io/instance: tdset-sample
-    app.kubernetes.io/part-of: k-pipe.cloud
+    app.kubernetes.io/part-of: kpipe
     app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: k-pipe.cloud
+    app.kubernetes.io/created-by: kpipe
   name: tdset-sample
   namespace: default
 spec:

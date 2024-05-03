@@ -45,7 +45,7 @@ go mod init example.com/m/v2
 This created a simple `go.mod`.
 
 ```
-operator-sdk init —domain k-pipe.cloud —repo github.com/k-pipe/pipeline-operator.git —plugins=go/v4-alpha
+operator-sdk init —domain kpipe —repo github.com/k-pipe/pipeline-operator.git —plugins=go/v4-alpha
 ```
 
 This extended [go.mod](./go.mod) (setting go version down to 1.20 and adding a bunch of dependencies).

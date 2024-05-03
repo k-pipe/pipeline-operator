@@ -33,7 +33,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
  && sudo apt update \
  && sudo apt-get install -y google-cloud-cli google-cloud-sdk-gke-gcloud-auth-plugin kubectl
 ENV USE_GKE_GCLOUD_AUTH_PLUGIN=True
-ENV DOMAIN=k-pipe.cloud
+ENV DOMAIN=kpipe
 ENV REPO=github.com/k-pipe/operator
 RUN mkdir /operator
 WORKDIR /operator

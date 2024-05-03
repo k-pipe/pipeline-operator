@@ -45,5 +45,5 @@ spec:
   maturity: alpha
   provider:
     name: k-pipe
-    url: https://k-pipe.cloud
+    url: https://k-pipe.github.io/pipeline-operator/
   version: 0.0.0
