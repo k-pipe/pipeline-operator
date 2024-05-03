@@ -1,6 +1,6 @@
 #!/bin/sh
 echo uninstall chart
-helm uninstall k-pipe k-pipe/pipeline-controller -n k-pipe
+helm uninstall k-pipe -n k-pipe
 echo remove repo
 helm repo remove k-pipe
 echo add repo

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kpipe
   name: tdset-sample
-  namespace: default
+  namespace: k-pipe
 spec:
   container:
     image: crccheck/hello-world
