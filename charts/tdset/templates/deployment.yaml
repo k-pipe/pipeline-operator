@@ -20,7 +20,7 @@ spec:
         {{- include "tdset.selectorLabels" . | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
+        runAsNonRoot: false # TODO enable this again or at least make it configurable
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
