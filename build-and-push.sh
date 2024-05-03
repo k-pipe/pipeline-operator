@@ -1,5 +1,7 @@
 GO_VERSION=1.21.9
 BUNDLE_VERSION=v0.0.9
+DOMAIN=k-pipe.cloud
+REPO=github.com/k-pipe/operator
 echo ""
 echo "============="
 echo "Installing go"
@@ -29,11 +31,8 @@ echo "Building operator-sdk"
 echo "====================="
 echo ""
 sudo chmod a+w+x $GOBIN
-ls -l $GOBIN
 make install
 cd ..
-# call install script
-sh scripts/install.sh
 echo ""
 echo "====================="
 echo "Init operator        "
@@ -41,26 +40,43 @@ echo "====================="
 echo ""
 mkdir operator
 cd operator
-#operator-sdk init --domain kpipe --plugins helm
-operator-sdk init --domain example.com --repo github.com/example/memcached-operator
+operator-sdk init --domain $DOMAIN --repo $REPO --plugins=go.kubebuilder.io/v4
 echo ""
 echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-#operator-sdk create api --group demo --version v1alpha1 --kind Nginx
-operator-sdk create api --group cache --version v1alpha1 --kind Memcached --resource --controller
+operator-sdk create api --group schedule --version v1 --kind TDSet --resource --controller
+echo ""
+echo "====================="
+echo "Adding sources      "
+echo "====================="
+echo ""
+cp /source/api/* /operator/api/v1/
+ADD /source/controller/* /operator/internal/controller
+echo ""
+echo "====================="
+echo "Generating manifests "
+echo "====================="
+echo ""
+make generate manifests
+echo ""
+echo "====================="
+echo "Building             "
+echo "====================="
+echo ""
+make build
 echo ""
 echo "====================="
 echo "Creating bundle      "
 echo "====================="
 echo ""
-mkdir -p config/manifests/bases
-cp ../operator.clusterserviceversion.yaml config/manifests/bases/
+#mkdir -p config/manifests/bases
+#cp ../operator.clusterserviceversion.yaml config/manifests/bases/
 ls -l config/manifests/bases/
 #operator-sdk  generate kustomize manifests --interactive=false
 #ls -l config/manifests/bases/
-make bundle IMG="kpipe/nginx-operator:$BUNDLE_VERSION"
+make bundle IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
 echo "============================"
 echo "  Logging in to dockerhub"
 echo "============================"
@@ -70,21 +86,21 @@ echo "====================="
 echo "Build & Push bundle  "
 echo "====================="
 echo ""
-make bundle-build bundle-push IMG="kpipe/nginx-operator:$BUNDLE_VERSION"
-echo ""
-echo "======================="
-echo "Deploy to test-cluster "
-echo "======================="
-echo ""
-echo $SERVICE_ACCOUNT_JSON_KEY > key.json
-echo "Json key has" `grep -c "" key.json` "lines"
-gcloud auth activate-service-account github-ci-cd@k-pipe-test-system.iam.gserviceaccount.com --key-file=key.json --project=k-pipe-test-system
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-sudo apt update
-sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin kubectl
-export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-gcloud  container clusters get-credentials k-pipe-runner --region europe-west3
-make deploy IMG="kpipe/operator-bundle:$BUNDLE_VERSION"
+make bundle-build bundle-push IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
+#echo ""
+#echo "======================="
+#echo "Deploy to test-cluster "
+#echo "======================="
+#echo ""
+#echo $SERVICE_ACCOUNT_JSON_KEY > key.json
+#echo "Json key has" `grep -c "" key.json` "lines"
+#gcloud auth activate-service-account github-ci-cd@k-pipe-test-system.iam.gserviceaccount.com --key-file=key.json --project=k-pipe-test-system
+#echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+#curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+#sudo apt update
+#sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin kubectl
+#export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+#gcloud  container clusters get-credentials k-pipe-runner --region europe-west3
+#make deploy IMG="kpipe/operator-bundle:$BUNDLE_VERSION"
 
 
