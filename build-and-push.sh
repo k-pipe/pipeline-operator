@@ -49,34 +49,40 @@ echo ""
 operator-sdk create api --group schedule --version v1 --kind TDSet --resource --controller
 echo ""
 echo "====================="
-echo "Adding sources      "
+echo "Adding api sources   "
 echo "====================="
 echo ""
 cp /source/api/* /operator/api/v1/
-ADD /source/controller/* /operator/internal/controller
 echo ""
 echo "====================="
 echo "Generating manifests "
 echo "====================="
 echo ""
-make generate manifests
+make generate
+make manifests
+echo ""
+echo "=========================="
+echo "Adding controller sources "
+echo "=========================="
+echo ""
+ADD /source/controller/* /operator/internal/controller
 echo ""
 echo "====================="
 echo "Building             "
 echo "====================="
 echo ""
 make build
-echo ""
-echo "====================="
-echo "Creating bundle      "
-echo "====================="
-echo ""
+#echo ""
+#echo "====================="
+#echo "Creating bundle      "
+#echo "====================="
+#echo ""
 #mkdir -p config/manifests/bases
 #cp ../operator.clusterserviceversion.yaml config/manifests/bases/
-ls -l config/manifests/bases/
-operator-sdk  generate kustomize manifests --interactive=false
-ls -l config/manifests/bases/
-make bundle IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
+#ls -l config/manifests/bases/
+#operator-sdk  generate kustomize manifests --interactive=false
+#ls -l config/manifests/bases/
+#make bundle IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
 echo "============================"
 echo "  Logging in to dockerhub"
 echo "============================"
@@ -87,12 +93,12 @@ echo "Build & Push image  "
 echo "====================="
 echo ""
 make docker-build docker-push IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
-echo ""
-echo "====================="
-echo "Build & Push bundle  "
-echo "====================="
-echo ""
-make bundle-build bundle-push IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
+#echo ""
+#echo "====================="
+#echo "Build & Push bundle  "
+#echo "====================="
+#echo ""
+#make bundle-build bundle-push IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
 #echo ""
 #echo "======================="
 #echo "Deploy to test-cluster "
