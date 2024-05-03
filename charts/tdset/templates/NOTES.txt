@@ -1,1 +1,1 @@
-Pipeline controller chart version 0.1.6 has been installed (operator bundle version v0.0.1)
+Pipeline controller chart version 0.1.6 has been installed (operator version v0.0.9)

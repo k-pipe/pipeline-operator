@@ -4,9 +4,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: tdsets.schedule.rs
+  name: tdsets.schedule.kpipe
 spec:
-  group: schedule.rs
+  group: schedule.kpipe
   names:
     kind: TDSet
     listKind: TDSetList
