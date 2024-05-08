@@ -50,8 +50,6 @@ spec:
                     versionPattern:
                       type: string
                   required:
-                  - after
-                  - before
                   - cronSpec
                   - versionPattern
                   type: object
