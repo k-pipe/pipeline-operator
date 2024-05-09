@@ -65,7 +65,7 @@ echo ""
 echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
-git checkout helm
+git checkout helm --track origin/test_branch
 cp config/crd/bases/*.yaml charts/tdset/crds/
 git add charts/tdset/crds/
 git commit -m "added crds"
