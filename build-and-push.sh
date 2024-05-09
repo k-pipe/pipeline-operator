@@ -68,7 +68,7 @@ echo "=========================="
 ls -lRt
 git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
 git fetch --unshallow
-#git fetch --all
+git fetch --all
 git checkout helm
 #--track origin/helm
 ls -lRt
