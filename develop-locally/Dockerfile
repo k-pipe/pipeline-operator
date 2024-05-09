@@ -39,6 +39,7 @@ RUN mkdir /operator
 WORKDIR /operator
 RUN operator-sdk init --domain $DOMAIN --repo $REPO --plugins=go.kubebuilder.io/v4
 RUN operator-sdk create api --group schedule --version v1 --kind TDSet --resource --controller
+RUN operator-sdk create api --group schedule --version v1 --kind Schedule --resource --controller
 ADD /source/api/* /operator/api/v1/
 RUN make generate
 RUN make manifests

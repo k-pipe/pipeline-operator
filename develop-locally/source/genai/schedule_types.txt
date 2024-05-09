@@ -1,0 +1,10 @@
+Write a type definition in go for a custom resource definition that will be used define schedules of pipeline runs.
+
+The custom resource shall contain the following fields:
+  - description: a text of maximally 200 characters describing the purpose and circumstances of the schedule
+  - pipeline: the name of the pipeline to be started
+  - version-pattern: a pattern (regex) to determine the version (semver) of the pipeline definition to be used
+  - schedule: a cron style definition of regular times when the pipeline is supposed to be started
+
+Place the generate code in package "v1". Ommit all textual description, just return the plain go file. Place remarks
+and hints as comments into the code. Add kubebuilder comments for validation.
