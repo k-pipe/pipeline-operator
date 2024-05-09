@@ -67,7 +67,7 @@ echo "Commit crds to helm branch"
 echo "=========================="
 git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
 git fetch --all
-git checkout -b helm --track origin/test_branch
+git checkout -b helm --track origin/helm
 cp config/crd/bases/*.yaml charts/tdset/crds/
 git add charts/tdset/crds/
 git commit -m "added crds"
