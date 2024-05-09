@@ -63,6 +63,19 @@ make generate
 make manifests
 echo ""
 echo "=========================="
+echo "Commit crds to helm branch"
+echo "=========================="
+git checkout helm
+cp config/crd/bases/*.yaml charts/tdset/crds/
+git add charts/tdset/crds/
+git commit -m "added crds"
+git push
+git checkout main
+echo ""
+make generate
+make manifests
+echo ""
+echo "=========================="
 echo "Adding controller sources "
 echo "=========================="
 echo ""
