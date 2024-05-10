@@ -67,8 +67,11 @@ echo "Commit crds to helm branch"
 echo "=========================="
 ls -lRt
 git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+echo Unsahllow
 git fetch --unshallow
+echo Fetchall
 git fetch --all
+echo Checkout
 git checkout helm
 #--track origin/helm
 ls -lRt
