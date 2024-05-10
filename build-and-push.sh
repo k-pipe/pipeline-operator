@@ -2,6 +2,8 @@ GO_VERSION=1.21.9
 BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
 REPO=github.com/k-pipe/operator
+git fetch origin helm:helm --force
+git show helm:charts/tdset/Chart.yaml
 echo ""
 echo "============="
 echo "Installing go"
