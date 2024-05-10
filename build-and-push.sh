@@ -69,12 +69,13 @@ ls -lRt
 git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
 echo Unsahllow
 git fetch --unshallow
-echo Fetchall
-git fetch --all
+#echo Fetchall
+#git fetch --all
 echo Checkout
-git checkout helm --track remote/helm
-echo Checkout
-git pull
+git checkout helm -
+#-track remote/helm
+#echo Checkout
+#git pull
 ls -lRt
 cp config/crd/bases/*.yaml charts/tdset/crds/
 git add charts/tdset/crds/
