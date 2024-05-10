@@ -3,7 +3,7 @@ BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
 REPO=github.com/k-pipe/operator
 mkdir ../crds
-cp Dockerfile ../crds/
+cp cycle.sh ../crds/
 #cp ../config/crd/bases/*.yaml ../crds/
 git fetch origin helm:helm --force
 cp ../crds/* charts/tdset/crds
