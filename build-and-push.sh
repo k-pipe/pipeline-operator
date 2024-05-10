@@ -65,23 +65,26 @@ echo ""
 echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
-ls -lRt
-git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
-echo Unsahllow
-git fetch --unshallow --all
-#echo Fetchall
+#ls -lRt
+#git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+#echo Unsahllow
+#git fetch --unshallow --all
+##echo Fetchall
 #git fetch --all
-echo Checkout
-git checkout helm
+#echo Checkout
+#git checkout helm
 #-track remote/helm
 #echo Checkout
 #git pull
-ls -lRt
-cp config/crd/bases/*.yaml charts/tdset/crds/
+git clone git@github.com:k-pipe/pipeline-operator.git
+cd pipeline-operator
+git checkout helm
+ls -l
+cp ../config/crd/bases/*.yaml charts/tdset/crds/
 git add charts/tdset/crds/
 git commit -m "added crds"
 git push
-git checkout main
+cd ..
 echo ""
 make generate
 make manifests
