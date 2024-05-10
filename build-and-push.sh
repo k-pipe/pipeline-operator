@@ -4,6 +4,8 @@ DOMAIN=kpipe
 REPO=github.com/k-pipe/operator
 git fetch origin helm:helm --force
 git show helm:charts/tdset/Chart.yaml
+git checkout helm
+ls -l
 echo ""
 echo "============="
 echo "Installing go"
