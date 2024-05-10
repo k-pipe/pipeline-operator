@@ -72,7 +72,7 @@ git fetch --unshallow
 echo Fetchall
 git fetch --all
 echo Checkout
-git checkout helm --track origin/helm
+git checkout helm --track remote/helm
 echo Checkout
 git pull
 ls -lRt
