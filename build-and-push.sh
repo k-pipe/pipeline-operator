@@ -72,8 +72,9 @@ git fetch --unshallow
 echo Fetchall
 git fetch --all
 echo Checkout
-git checkout helm
-#--track origin/helm
+git checkout helm --track origin/helm
+echo Checkout
+git pull
 ls -lRt
 cp config/crd/bases/*.yaml charts/tdset/crds/
 git add charts/tdset/crds/
