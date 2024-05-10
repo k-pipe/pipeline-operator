@@ -2,10 +2,12 @@ GO_VERSION=1.21.9
 BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
 REPO=github.com/k-pipe/operator
+mkdir ../crds
+cp Dockerfile ../crds/
+#cp ../config/crd/bases/*.yaml ../crds/
 git fetch origin helm:helm --force
-git show helm:charts/tdset/Chart.yaml
-git checkout helm
-ls -l
+cp ../crds/* charts/tdset/crds
+ls -l charts/tdset/crds
 echo ""
 echo "============="
 echo "Installing go"
@@ -69,7 +71,10 @@ echo ""
 echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
+mkdir ../crds
+cp ../config/crd/bases/*.yaml ../crds/
 git fetch origin helm:helm --force
+cp ../crds/* charts/tdset
 git show helm:charts/tdset/Chart.yaml
 #https://stackoverflow.com/questions/69577518/github-action-to-copy-specific-folders-from-one-branch-to-another-in-the-same-re
 #ls -lRt
