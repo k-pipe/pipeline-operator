@@ -65,6 +65,9 @@ echo ""
 echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
+git fetch origin helm:helm --force
+git show helm:charts/tdset/Chart.yaml
+#https://stackoverflow.com/questions/69577518/github-action-to-copy-specific-folders-from-one-branch-to-another-in-the-same-re
 #ls -lRt
 #git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
 #echo Unsahllow
