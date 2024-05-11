@@ -46,8 +46,11 @@ spec:
                     before:
                       type: string
                     cronSpec:
+                      description: 'posix cron spec regex, see: https://www.codeproject.com/Tips/5299523/Regex-for-Cron-Expressions'
+                      pattern: '[0-9]*'
                       type: string
                     versionPattern:
+                      description: semver 2 regex, see https://semver.org/
                       type: string
                   required:
                   - cronSpec
