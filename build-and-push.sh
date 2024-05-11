@@ -65,7 +65,7 @@ echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
 mkdir ../crds
-cp ../config/crd/bases/*.yaml ../crds/
+cp config/crd/bases/*.yaml ../crds/
 git fetch origin helm:helm --force
 git checkout helm
 cp ../crds/* charts/tdset/crds
