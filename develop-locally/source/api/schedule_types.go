@@ -31,7 +31,6 @@ type ScheduleInRange struct {
 	// +kubebuilder:validation:Required
 	CronSpec string `json:"cronSpec"`
 	// semver 2 regex, see https://semver.org/
-	// +kubebuilder:validation:Pattern:=^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
 	// +kubebuilder:validation:Required
 	VersionPattern string `json:"versionPattern"`
 }
