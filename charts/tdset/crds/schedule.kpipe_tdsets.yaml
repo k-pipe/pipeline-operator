@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: schedules.schedule.kpipe
+  name: tdsets.schedule.kpipe
 spec:
   group: schedule.kpipe
   names:
-    kind: Schedule
-    listKind: ScheduleList
-    plural: schedules
-    singular: schedule
+    kind: TDSet
+    listKind: TDSetList
+    plural: tdsets
+    singular: tdset
   scope: Namespaced
   versions:
   - name: v1
@@ -32,42 +32,64 @@ spec:
           metadata:
             type: object
           spec:
-            description: ScheduleSpec defines the desired state of Schedule
+            description: TDSetSpec defines the desired state of TDSet
             properties:
-              pipeline:
-                type: string
-              schedules:
-                items:
-                  description: ScheduleInRange defines cron schedule and version pattern
-                    for a specified date range.
-                  properties:
-                    after:
-                      type: string
-                    before:
-                      type: string
-                    cronSpec:
-                      description: 'posix cron spec regex, see: https://www.codeproject.com/Tips/5299523/Regex-for-Cron-Expressions'
-                      pattern: '[0-9]*'
-                      type: string
-                    versionPattern:
-                      description: semver 2 regex, see https://semver.org/
-                      type: string
-                  required:
-                  - cronSpec
-                  - versionPattern
-                  type: object
-                type: array
-              updateIntervalMinutes:
+              container:
+                description: Container defines container related properties.
+                properties:
+                  image:
+                    type: string
+                  port:
+                    type: integer
+                required:
+                - image
+                - port
+                type: object
+              defaultReplica:
+                format: int32
+                minimum: 1
+                type: integer
+              intervalMint:
                 format: int32
                 maximum: 1440
                 minimum: 1
                 type: integer
+              schedulingConfig:
+                items:
+                  description: SchedulingConfig defines scheduling related properties.
+                  properties:
+                    endTime:
+                      maximum: 23
+                      minimum: 0
+                      type: integer
+                    replica:
+                      minimum: 0
+                      type: integer
+                    startTime:
+                      maximum: 23
+                      minimum: 0
+                      type: integer
+                  required:
+                  - endTime
+                  - replica
+                  - startTime
+                  type: object
+                type: array
+              service:
+                description: Service defines service related properties.
+                properties:
+                  port:
+                    type: integer
+                required:
+                - port
+                type: object
             required:
-            - pipeline
-            - schedules
+            - container
+            - defaultReplica
+            - schedulingConfig
             type: object
           status:
-            description: ScheduleStatus defines the observed state of Schedule
+            description: TDSetStatus defines the observed state of TDSet
             properties:
               conditions:
                 items:
