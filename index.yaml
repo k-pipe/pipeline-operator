@@ -3,6 +3,17 @@ entries:
   pipeline-controller:
   - apiVersion: v2
     appVersion: v0.1.0
+    created: "2024-05-11T18:27:48.363551352Z"
+    description: A Helm chart for a Kubernetes operator to define, run and schedule
+      pipelines
+    digest: a4efef7d0effd3c6d3826f15e485eb12e4f36b1e112d88431d975a5b36b76bf4
+    name: pipeline-controller
+    type: application
+    urls:
+    - https://github.com/k-pipe/pipeline-operator/releases/download/pipeline-controller-0.1.13/pipeline-controller-0.1.13.tgz
+    version: 0.1.13
+  - apiVersion: v2
+    appVersion: v0.1.0
     created: "2024-05-08T17:10:14.324687446Z"
     description: A Helm chart for a Kubernetes operator to define, run and schedule
       pipelines
@@ -133,4 +144,4 @@ entries:
     urls:
     - https://github.com/k-pipe/pipeline-operator/releases/download/tdset-controller-0.1.1/tdset-controller-0.1.1.tgz
     version: 0.1.1
-generated: "2024-05-08T17:10:14.324733772Z"
+generated: "2024-05-11T18:27:48.363654034Z"
