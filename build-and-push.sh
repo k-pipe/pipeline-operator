@@ -68,7 +68,8 @@ mkdir ../crds
 cp config/crd/bases/*.yaml ../crds/
 git fetch origin helm:helm --force
 git checkout helm
-ls -lR ..
+ls -l ..
+git status
 cp ../crds/* charts/tdset/crds
 ls -l charts/tdset/crds
 git commit -m "added crds"
