@@ -71,7 +71,7 @@ ls -l ../charts/tdset/crds/
 git config --global user.email "cicd@k-pipe.cloud"
 git config --global user.name "CICD-pipeline"
 git add ../charts/tdset/crds/*
-git commit -m "updated crds from main"
+git commit --allow-empty -m "updated crds from main"
 git push --set-upstream origin helm
 git checkout main
 echo ""
