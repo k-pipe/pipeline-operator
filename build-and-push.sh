@@ -68,8 +68,10 @@ git fetch origin helm:helm --force
 git checkout helm
 cp ../operator/config/crd/bases/*.yaml ../charts/tdset/crds/
 ls -l ../charts/tdset/crds/
-git commit -m "added crds"
-git push
+git config --global user.email "cicd@k-pipe.cloud"
+git config --global user.name "CICD-pipeline"
+git commit -m "updated crds from main"
+git push --set-upstream origin helm
 git checkout main
 echo ""
 echo "=========================="
