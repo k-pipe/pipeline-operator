@@ -1,4 +1,4 @@
-name: Release Charts
+name: Release Helm Chart
 
 on:
   push:
@@ -25,6 +25,8 @@ jobs:
 
       - name: Install Helm
         uses: azure/setup-helm@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
