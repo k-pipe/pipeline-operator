@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: tdsets.schedule.kpipe
+  name: tdsets.schedule.k-pipe.cloud
 spec:
-  group: schedule.kpipe
+  group: schedule.k-pipe.cloud
   names:
     kind: TDSet
     listKind: TDSetList
