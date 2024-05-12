@@ -4,6 +4,21 @@ GO_VERSION=1.21.9
 DOMAIN=kpipe
 REPO=github.com/k-pipe/pipeline-operator
 #
+echo ""
+echo "==========================="
+echo "Configuring git repo access"
+echo "==========================="
+echo ""
+git fetch origin helm:helm --force
+git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
+git config --global user.email "k-pipe@kneissler.com"
+git config --global user.name "k-pipe"
+#
+echo ""
+echo "=================="
+echo "Increasing version"
+echo "=================="
+echo ""
 PREVIOUS_VERSION=`git show helm:version`
 echo Previous version: $PREVIOUS_VERSION
 VERSION=`echo $PREVIOUS_VERSION | sed 's#[0-9]*$##'``echo $PREVIOUS_VERSION+1 | sed "s#^.*\.##" | bc -l`
@@ -72,13 +87,9 @@ echo ""
 echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
-git fetch origin helm:helm --force
 git checkout helm
 cp ../operator/config/crd/bases/*.yaml ../charts/tdset/crds/
 ls -l ../charts/tdset/crds/
-git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
-git config --global user.email "k-pipe@kneissler.com"
-git config --global user.name "k-pipe"
 git add ../charts/tdset/crds/*
 echo $VERSION > ../version
 git add ../version
