@@ -10,12 +10,14 @@ on:
 permissions:
   contents: write
   actions: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+         persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of CICD_GITHUB_TOKEN
+         github_token: ${{ secrets.CICD_GITHUB_TOKEN}}
     - name: Build the controller docker image
       env:
         DOCKERHUB_PUSH_TOKEN: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
