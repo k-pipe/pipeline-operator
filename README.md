@@ -1,5 +1,9 @@
 # pipeline-operator
 
+## Build strategy
+
+
+
 Follow tutorial: https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/
 
 ```
