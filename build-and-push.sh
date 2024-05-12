@@ -68,6 +68,7 @@ git fetch origin helm:helm --force
 git checkout helm
 cp ../operator/config/crd/bases/*.yaml ../charts/tdset/crds/
 ls -l ../charts/tdset/crds/
+git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
 git config --global user.email "k-pipe@kneissler.com"
 git config --global user.name "k-pipe"
 git add ../charts/tdset/crds/*

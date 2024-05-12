@@ -22,4 +22,5 @@ jobs:
       env:
         DOCKERHUB_PUSH_TOKEN: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
         SERVICE_ACCOUNT_JSON_KEY: ${{ secrets.SERVICE_ACCOUNT_JSON_KEY }}
+        CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
       run:  bash build-and-push.sh
