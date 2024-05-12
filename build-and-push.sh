@@ -23,7 +23,6 @@ PREVIOUS_VERSION=`git show helm:version`
 echo Previous version: $PREVIOUS_VERSION
 VERSION=`echo $PREVIOUS_VERSION | sed 's#[0-9]*$##'``echo $PREVIOUS_VERSION+1 | sed "s#^.*\.##" | bc -l`
 echo New version: $VERSION
-exit
 #
 echo ""
 echo "============="
