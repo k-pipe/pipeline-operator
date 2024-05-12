@@ -1,8 +1,13 @@
 GO_VERSION=1.21.9
-#IMAGE_VERSION=0.0.1
-#BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
-REPO=github.com/k-pipe/pipeline-operator
+DOCKER_USER=kpipe
+GITHUB_USER=k-pipe
+APP_NAME=pipeline-operator
+API_VERSION=v1
+REPO=github.com/$GITHUB_USER/$APP_NAME
+KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
+KIND=TDSet
+LC_KIND=tdset
 #
 echo ""
 echo "==========================="
@@ -10,9 +15,9 @@ echo "Configuring git repo access"
 echo "==========================="
 echo ""
 git fetch origin helm:helm --force
-git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
-git config --global user.email "k-pipe@kneissler.com"
-git config --global user.name "k-pipe"
+git remote set-url origin https://$GITHUB_USER:$CICD_GITHUB_TOKEN@$REPO.git
+git config --global user.email "$GITHUB_USER@$DOMAIN"
+git config --global user.name "$GITHUB_USER"
 #
 echo ""
 echo "=================="
@@ -62,20 +67,20 @@ echo "====================="
 echo ""
 mkdir operator
 cd operator
-operator-sdk init --domain $DOMAIN --repo $REPO --plugins=go.kubebuilder.io/v4
+operator-sdk init --domain $DOMAIN --repo $REPO --plugins=$KUBEBUILDER_PLUGIN
 echo ""
 echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-operator-sdk create api --group schedule --version v1 --kind TDSet --resource --controller
+operator-sdk create api --group schedule --version $API_VERSION --kind $KIND --resource --controller
 echo ""
 echo "====================="
 echo "Adding api sources   "
 echo "====================="
 echo ""
-cp ../source/api/* api/v1/
-ls -l api/v1
+cp ../source/api/* api/$API_VERSION/
+ls -l api/$API_VERSION
 echo ""
 echo "====================="
 echo "Generating manifests "
@@ -87,17 +92,17 @@ echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
 git checkout helm
-rm ../charts/tdset/crds/*.yaml
-cp ../operator/config/crd/bases/*.yaml ../charts/tdset/crds/
-ls -l ../charts/tdset/crds/
-git add ../charts/tdset/crds
+rm ../charts/$LC_KIND/crds/*.yaml
+cp ../operator/config/crd/bases/*.yaml ../charts/$LC_KIND/crds/
+ls -l ../charts/$LC_KIND/crds/
+git add ../charts/$LC_KIND/crds
 echo $VERSION > ../version
 git add ../version
-sed -i "s#version: .*#version: $VERSION#" ../charts/tdset/Chart.yaml
-sed -i "s#appVersion: .*#appVersion: $VERSION#" ../charts/tdset/Chart.yaml
-git add ../charts/tdset/Chart.yaml
-sed -i "s#version .*#version $VERSION#" ../charts/tdset/templates/NOTES.txt
-git add ../charts/tdset/templates/NOTES.txt
+sed -i "s#version: .*#version: $VERSION#" ../charts/$LC_KINDt/Chart.yaml
+sed -i "s#appVersion: .*#appVersion: $VERSION#" ../charts/$LC_KIND/Chart.yaml
+git add ../charts/$LC_KIND/Chart.yaml
+sed -i "s#version .*#version $VERSION#" ../charts/$LC_KIND/templates/NOTES.txt
+git add ../charts/$LC_KIND/templates/NOTES.txt
 git commit --allow-empty -m "version $VERSION"
 git push --set-upstream origin helm
 git checkout main
@@ -117,10 +122,10 @@ make build
 echo "============================"
 echo "  Logging in to dockerhub"
 echo "============================"
-docker login --username kpipe --password $DOCKERHUB_PUSH_TOKEN
+docker login --username $DOCKER_USER --password $DOCKERHUB_PUSH_TOKEN
 echo ""
 echo "====================="
 echo "Build & Push image  "
 echo "====================="
 echo ""
-make docker-build docker-push IMG="kpipe/pipeline-operator:$VERSION"
+make docker-build docker-push IMG="$DOCKER_USER/$APP_NAME:$VERSION"
