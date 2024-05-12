@@ -1,5 +1,5 @@
 GO_VERSION=1.21.9
-DOMAIN=kpipe
+DOMAIN=k-pipe.cloud
 DOCKER_USER=kpipe
 GITHUB_USER=k-pipe
 APP_NAME=pipeline-operator

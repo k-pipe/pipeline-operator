@@ -41,9 +41,9 @@ type TDSetReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=schedule.kpipe,resources=tdsets,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=schedule.kpipe,resources=tdsets/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=schedule.kpipe,resources=tdsets/finalizers,verbs=update
+//+kubebuilder:rbac:groups=schedule.k-pipe.cloud,resources=tdsets,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=schedule.k-pipe.cloud,resources=tdsets/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=schedule.k-pipe.cloud,resources=tdsets/finalizers,verbs=update
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
