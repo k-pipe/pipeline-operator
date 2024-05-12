@@ -87,15 +87,16 @@ echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
 git checkout helm
+rm ../charts/tdset/crds/*.yaml
 cp ../operator/config/crd/bases/*.yaml ../charts/tdset/crds/
 ls -l ../charts/tdset/crds/
-git add ../charts/tdset/crds/*
+git add ../charts/tdset/crds
 echo $VERSION > ../version
 git add ../version
 sed -i "s#version: .*#version $VERSION#" ../charts/tdset/Chart.yaml
 sed -i "s#appVersion: .*#appVersion $VERSION#" ../charts/tdset/Chart.yaml
 git add ../charts/tdset/Chart.yaml
-sed -i "s#version: .*#version $VERSION#"" ../charts/tdset/templates/NOTES.txt
+sed -i "s#version: .*#version $VERSION#" ../charts/tdset/templates/NOTES.txt
 git add ../charts/tdset/templates/NOTES.txt
 git commit --allow-empty -m "version $VERSION"
 git push --set-upstream origin helm
