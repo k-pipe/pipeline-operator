@@ -98,7 +98,7 @@ ls -l ../charts/$LC_KIND/crds/
 git add ../charts/$LC_KIND/crds
 echo $VERSION > ../version
 git add ../version
-sed -i "s#version: .*#version: $VERSION#" ../charts/$LC_KINDt/Chart.yaml
+sed -i "s#version: .*#version: $VERSION#" ../charts/$LC_KIND/Chart.yaml
 sed -i "s#appVersion: .*#appVersion: $VERSION#" ../charts/$LC_KIND/Chart.yaml
 git add ../charts/$LC_KIND/Chart.yaml
 sed -i "s#version .*#version $VERSION#" ../charts/$LC_KIND/templates/NOTES.txt
