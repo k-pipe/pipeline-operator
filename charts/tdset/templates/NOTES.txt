@@ -1,1 +1,1 @@
-Installed pipeline controller chart version 0.1.17
+Installed pipeline controller chart version 0.1.18
