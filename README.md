@@ -2,7 +2,7 @@
 
 ## Build strategy
 
-
+Domain k-pipe.cloud
 
 Follow tutorial: https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/
 
