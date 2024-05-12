@@ -1,1 +1,1 @@
-Pipeline controller chart version 0.1.12 has been installed
+Installed pipeline controller chart version 0.1.12
