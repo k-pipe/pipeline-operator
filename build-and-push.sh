@@ -1,8 +1,15 @@
 GO_VERSION=1.21.9
-IMAGE_VERSION=0.0.1
+#IMAGE_VERSION=0.0.1
 #BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
 REPO=github.com/k-pipe/pipeline-operator
+#
+PREVIOUS_VERSION=`git show helm:version`
+echo Previous version: $PREVIOUS_VERSION
+VERSION=`echo $PREVIOUS_VERSION | sed 's#[0-9]*$##'``echo $PREVIOUS_VERSION+1 | sed "s#^.*\.##" | bc -l`
+echo New version: $VERSION
+exit
+#
 echo ""
 echo "============="
 echo "Installing go"
@@ -73,7 +80,14 @@ git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pi
 git config --global user.email "k-pipe@kneissler.com"
 git config --global user.name "k-pipe"
 git add ../charts/tdset/crds/*
-git commit --allow-empty -m "updated crds from main"
+echo $VERSION > ../version
+git add ../version
+sed -i "s#version: .*#version $VERSION#" charts/tdset/Chart.yaml
+sed -i "s#appVersion: .*#appVersion $VERSION#" charts/tdset/Chart.yaml
+git add charts/tdset/Chart.yaml
+sed -i "s#version: .*#version $VERSION#"" charts/tdset/templates/NOTES.txt
+git add charts/tdset/templates/NOTES.txt
+git commit --allow-empty -m "version $VERSION"
 git push --set-upstream origin helm
 git checkout main
 echo ""
@@ -109,7 +123,7 @@ echo "====================="
 echo "Build & Push image  "
 echo "====================="
 echo ""
-make docker-build docker-push IMG="kpipe/pipeline-operator:$IMAGE_VERSION"
+make docker-build docker-push IMG="kpipe/pipeline-operator:$VERSION"
 #echo ""
 #echo "====================="
 #echo "Build & Push bundle  "
