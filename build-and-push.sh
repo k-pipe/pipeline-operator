@@ -2,7 +2,7 @@ GO_VERSION=1.21.9
 #IMAGE_VERSION=0.0.1
 #BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
-REPO=github.com/kpipe/pipeline-operator
+REPO=github.com/k-pipe/operator
 #
 echo ""
 echo "==========================="
