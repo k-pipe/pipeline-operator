@@ -1,7 +1,8 @@
 GO_VERSION=1.21.9
-BUNDLE_VERSION=v0.1.0
+IMAGE_VERSION=0.0.1
+#BUNDLE_VERSION=v0.1.0
 DOMAIN=kpipe
-REPO=github.com/k-pipe/operator
+REPO=github.com/k-pipe/pipeline-operator
 echo ""
 echo "============="
 echo "Installing go"
@@ -108,7 +109,7 @@ echo "====================="
 echo "Build & Push image  "
 echo "====================="
 echo ""
-make docker-build docker-push IMG="kpipe/pipeline-operator:$BUNDLE_VERSION"
+make docker-build docker-push IMG="kpipe/pipeline-operator:$IMAGE_VERSION"
 #echo ""
 #echo "====================="
 #echo "Build & Push bundle  "

@@ -1,7 +1,6 @@
 
 FROM ubuntu
 ENV GO_VERSION=1.21.9
-ENV BUNDLE_VERSION=v0.0.9
 #
 # install basic tools
 #
