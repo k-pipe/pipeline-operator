@@ -7,7 +7,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	schedulev1 "github.com/k-pipe/operator/api/v1"
+	schedulev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
 func (r *TDSetReconciler) GetExpectedReplica(ctx context.Context, req ctrl.Request, tdSet *schedulev1.TDSet) (int32, error) {

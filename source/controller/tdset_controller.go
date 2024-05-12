@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	schedulev1 "github.com/k-pipe/operator/api/v1"
+	schedulev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
 const (
