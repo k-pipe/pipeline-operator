@@ -30,6 +30,10 @@ echo Previous version: $PREVIOUS_VERSION
 VERSION=`echo $PREVIOUS_VERSION | sed 's#[0-9]*$##'``echo $PREVIOUS_VERSION+1 | sed "s#^.*\.##" | bc -l`
 echo New version: $VERSION
 #
+# do installation in tmp folder
+#
+mkdir tmp
+cd tmp
 echo ""
 echo "============="
 echo "Installing go"
@@ -60,7 +64,8 @@ echo "====================="
 echo ""
 sudo chmod a+w+x $GOBIN
 make install
-cd ..
+cd ../..
+rm -rf tmp
 echo ""
 echo "====================="
 echo "Init operator        "
