@@ -16,6 +16,7 @@ echo "Configuring git repo access"
 echo "==========================="
 echo ""
 git fetch origin helm:helm --force
+git fetch origin generated:generated --force
 git remote set-url origin https://$GITHUB_USER:$CICD_GITHUB_TOKEN@$REPO.git
 git config --global user.email "$GITHUB_USER@$DOMAIN"
 git config --global user.name "$GITHUB_USER"
@@ -142,9 +143,9 @@ echo "========================="
 echo ""
 cd ..
 git checkout generated
-ls | grep -xv "operator" | xargs rm
+ls | grep -xv "operator" | xargs rm -f
 mv operator/* .
-rm operator
+rm -f operator
 ls -lR
 echo $VERSION > version
 git add .
