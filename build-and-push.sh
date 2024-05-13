@@ -135,3 +135,18 @@ echo "Build & Push image  "
 echo "====================="
 echo ""
 make docker-build docker-push IMG="$DOCKER_USER/$APP_NAME:$VERSION"
+echo ""
+echo "========================="
+echo "Push to branch generated "
+echo "========================="
+echo ""
+cd ..
+git checkout generated
+ls | grep -xv "operator" | xargs rm
+mv operator/* .
+rm operator
+ls -lR
+echo $VERSION > version
+git add .
+git commit -m "version $VERSION"
+git push --set-upstream origin generated
