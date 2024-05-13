@@ -17,7 +17,7 @@ rules:
       - update
       - watch
   - apiGroups:
-      - schedule.k-pipe.cloud
+      - pipeline.k-pipe.cloud
     resources:
       - tdsets
     verbs:
@@ -29,13 +29,13 @@ rules:
       - update
       - watch
   - apiGroups:
-      - schedule.k-pipe.cloud
+      - pipeline.k-pipe.cloud
     resources:
       - tdsets/finalizers
     verbs:
       - update
   - apiGroups:
-      - schedule.k-pipe.cloud
+      - pipeline.k-pipe.cloud
     resources:
       - tdsets/status
     verbs:
