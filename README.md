@@ -1,76 +1,91 @@
-# pipeline-operator
+# operator
+// TODO(user): Add simple overview of use/purpose
 
-Follow tutorial: https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/
+## Description
+// TODO(user): An in-depth paragraph about your project and overview of use
 
-```
-operator-sdk init --domain kpipe --plugins helm 
-operator-sdk create api --group demo --version v1alpha1 --kind Nginx
-make docker-build docker-push IMG="kpipe/nginx-operator:v0.0.1"
-operator-sdk olm install
-make bundle IMG="kpipe/nginx-operator:v0.0.1"  # give some input here
-make bundle-build bundle-push IMG="kpipe/nginx-operator:v0.0.1"
-```
+## Getting Started
 
-To use it in kpipe test cluster
+### Prerequisites
+- go version v1.20.0+
+- docker version 17.03+.
+- kubectl version v1.11.3+.
+- Access to a Kubernetes v1.11.3+ cluster.
 
-```
-gcloud config set account j@kneissler.com
-gcloud auth application-default set-quota-project k-pipe-test-system
-gcloud config set project k-pipe-test-system
-gcloud container clusters get-credentials k-pipe-runner --region europe-west3
-gcloud projects add-iam-policy-binding k-pipe-test-system \
-  --member=user:j@kneissler.com \
-  --role=roles/container.admin
-make deploy IMG="kpipe/nginx-operator:v0.0.1"
+### To Deploy on the cluster
+**Build and push your image to the location specified by `IMG`:**
+
+```sh
+make docker-build docker-push IMG=<some-registry>/operator:tag
 ```
 
+**NOTE:** This image ought to be published in the personal registry you specified. 
+And it is required to have access to pull the image from the working environment. 
+Make sure you have the proper permission to the registry if the above commands don’t work.
 
+**Install the CRDs into the cluster:**
 
-## Creation 
-
-This repository was setup using the go kubernetes operator framework by running the following commands (on a mac obviously):
-
-```
-brew install go operator-sdk
-```
-
-On april 17 2024 this installed go 1.22.2 and operator-sdk 1.34.1
-
-Next:
-
-```
-go mod init example.com/m/v2
+```sh
+make install
 ```
 
-This created a simple `go.mod`.
+**Deploy the Manager to the cluster with the image specified by `IMG`:**
 
-```
-operator-sdk init —domain kpipe —repo github.com/k-pipe/pipeline-operator.git —plugins=go/v4-alpha
-```
-
-This extended [go.mod](./go.mod) (setting go version down to 1.20 and adding a bunch of dependencies).
-Furthermore it created the following files and sub-folders:
- * [.dockerignore](./.dockerignore)
- * [.gitignore](./.gitignore)
- * [.golangci.yml](./.golangci.yml)
- * [Dockerfile](./Dockerfile)
- * [go.sum](./go.sum)
- * [Makefile](./Makefile)
- * [PROJECT](./PROJECT)
- * [cmd](./cmd)
- * [config](./config)
- * [hack](./hack)
- * [test](./test)
-
-The following command was used to create a CRD for the pipeline resource:
-
-```
-operator-sdk create api --group apps --version v1alpha1 --kind Pipeline --resource --controller
+```sh
+make deploy IMG=<some-registry>/operator:tag
 ```
 
-## Background
+> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin 
+privileges or be logged in as admin.
 
-As introduction to kubernetes operators can be found here: https://shahin-mahmud.medium.com/write-your-first-kubernetes-operator-in-go-177047337eae
-Another medium article that was helpful in setting this up: https://www.faizanbashir.me/guide-to-create-kubernetes-operator-with-golang
+**Create instances of your solution**
+You can apply the samples (examples) from the config/sample:
 
-Note: example operator hosted as helm chart on github: https://backaged.github.io/tdset-operator/
+```sh
+kubectl apply -k config/samples/
+```
+
+>**NOTE**: Ensure that the samples has default values to test it out.
+
+### To Uninstall
+**Delete the instances (CRs) from the cluster:**
+
+```sh
+kubectl delete -k config/samples/
+```
+
+**Delete the APIs(CRDs) from the cluster:**
+
+```sh
+make uninstall
+```
+
+**UnDeploy the controller from the cluster:**
+
+```sh
+make undeploy
+```
+
+## Contributing
+// TODO(user): Add detailed information on how you would like others to contribute to this project
+
+**NOTE:** Run `make help` for more information on all potential `make` targets
+
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+
+## License
+
+Copyright 2024.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
