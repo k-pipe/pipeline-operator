@@ -143,10 +143,10 @@ echo "========================="
 echo ""
 cd ..
 git checkout generated
-ls | grep -xv "operator" | xargs rm -f
+ls | grep -xv "operator" | sed "s#^#rm -f #" | sh
 mv operator/* .
+mv operator/.* .
 rm -f operator
-ls -lR
 echo $VERSION > version
 git add .
 git commit -m "version $VERSION"
