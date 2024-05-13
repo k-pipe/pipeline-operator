@@ -3,6 +3,7 @@ DOMAIN=k-pipe.cloud
 DOCKER_USER=kpipe
 GITHUB_USER=k-pipe
 APP_NAME=pipeline-operator
+GROUP=pipeline
 API_VERSION=v1
 REPO=github.com/$GITHUB_USER/$APP_NAME
 KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
@@ -73,7 +74,7 @@ echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-operator-sdk create api --group schedule --version $API_VERSION --kind $KIND --resource --controller
+operator-sdk create api --group $GROUP --version $API_VERSION --kind $KIND --resource --controller
 echo ""
 echo "====================="
 echo "Adding api sources   "

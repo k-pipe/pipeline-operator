@@ -1,4 +1,4 @@
-apiVersion: schedule.kpipe/v1
+apiVersion: pipeline.k-pipe.cloud/v1
 kind: TDSet
 metadata:
   labels:
