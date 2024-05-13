@@ -3,6 +3,7 @@
 ## Build strategy
 
 Domain k-pipe.cloud
+Group pipeline
 
 Follow tutorial: https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/
 
