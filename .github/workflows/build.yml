@@ -1,0 +1,45 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: ['*']
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+         persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of CICD_GITHUB_TOKEN
+         token: ${{ secrets.CICD_GITHUB_TOKEN}}
+    - name: Configure git
+      env:
+        CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
+      run:  bash configure-git.sh
+    - name: Ensure new version
+      run:  bash ensure-new-version.sh
+    - name: Install go
+      run:  bash install-go.sh
+    - name: Install operator sdk
+      run:  bash install-operator-sdk.sh
+    - name: Setup operator
+      run:  bash setup-operator.sh
+    - name: Push to helm branch
+      run:  bash push-to-helm-branch.sh
+    - name: Build and push
+      env:
+        DOCKERHUB_PUSH_TOKEN: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+      run:  bash build-and-push.sh
+    - name: Push to generated branch
+      run:  bash push-to-generated-branch.sh
+    - name: Run tests
+      env:
+        SERVICE_ACCOUNT_JSON_KEY: ${{ secrets.SERVICE_ACCOUNT_JSON_KEY }}
+      run:  echo "Tests not implemented, yet"
