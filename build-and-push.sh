@@ -152,7 +152,7 @@ rm -rf operator
 # addd version
 echo $VERSION > version
 # add all files to git
-git add .
+git add -A .
 # commit and push
 git commit -m "version $VERSION"
 git push --set-upstream origin generated
