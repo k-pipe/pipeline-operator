@@ -1,0 +1,21 @@
+Here is the Go type definition for the custom resource:
+```
+// +kubebuilder:validation:Type="string";MaxLength=200;Required=true
+type Schedule struct {
+    // Description of the schedule purpose and circumstances
+    Description string `json:"description"`
+
+    // Name of the pipeline to be started
+    Pipeline string `json:"pipeline"`
+
+    // Version pattern (regex) to determine the version of the pipeline definition
+    VersionPattern string `json:"versionPattern"`
+
+    // Cron style definition of regular times when the pipeline is supposed to be started
+    Schedule string `json:"schedule"`
+}
+```
+Note that I used the `+kubebuilder:validation` comment to specify validation rules for each field. In this case, I specified that the `Description` field should be a string with a maximum length of 200 characters and required. You can adjust these settings as needed.
+
+Also, I used Go's struct tags (`json:"field"` in this case) to specify the JSON field names. This is not strictly necessary for the custom resource definition itself, but it can be helpful when generating JSON data from the struct.
+
