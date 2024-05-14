@@ -22,23 +22,23 @@ jobs:
     - name: Configure git
       env:
         CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
-      run:  bash configure-git.sh
+      run:  bash cicd-scripts/configure-git.sh
     - name: Ensure new version
-      run:  bash ensure-new-version.sh
+      run:  bash cicd-scripts/ensure-new-version.sh
     - name: Install go
-      run:  bash install-go.sh
+      run:  bash cicd-scripts/install-go.sh
     - name: Install operator sdk
-      run:  bash install-operator-sdk.sh
+      run:  bash cicd-scripts/install-operator-sdk.sh
     - name: Setup operator
-      run:  bash setup-operator.sh
+      run:  bash cicd-scripts/setup-operator.sh
     - name: Push to helm branch
-      run:  bash push-to-helm-branch.sh
+      run:  bash cicd-scripts/push-to-helm-branch.sh
     - name: Build and push
       env:
         DOCKERHUB_PUSH_TOKEN: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
-      run:  bash build-and-push.sh
+      run:  bash cicd-scripts/build-and-push.sh
     - name: Push to generated branch
-      run:  bash push-to-generated-branch.sh
+      run:  bash cicd-scripts/push-to-generated-branch.sh
     - name: Run tests
       env:
         SERVICE_ACCOUNT_JSON_KEY: ${{ secrets.SERVICE_ACCOUNT_JSON_KEY }}
