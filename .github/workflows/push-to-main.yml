@@ -23,7 +23,7 @@ jobs:
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
         run: |
           git fetch origin main:main --force
-          git remote set-url origin https://$GITHUB_USER:$CICD_GITHUB_TOKEN@github.com/$GITHUB_USER/pipeline-operator.git
+          git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
           git config --global user.email "k-pipe@k-pipe.cloud"
           git config --global user.name "k-pipe"
           # move folder with code
