@@ -147,7 +147,6 @@ git checkout generated
 ls | grep -xv "operator" | grep -xv "." | grep -xv ".." | sed "s#^#rm -rf #" | sh
 # move files from operator folder
 mv operator/* .
-mv operator/.* .
 # delete operator folder
 rm -rf operator
 # addd version
