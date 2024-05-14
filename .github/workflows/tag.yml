@@ -2,8 +2,7 @@ name: Tag
 
 on:
   push:
-    tags:
-      - '*.*.*'
+    tags: [ "*.*.*" ]
 
 permissions:
   contents: write
@@ -16,8 +15,10 @@ jobs:
       with:
          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of CICD_GITHUB_TOKEN
          token: ${{ secrets.CICD_GITHUB_TOKEN}}
-    - name: Set version according to tag
+    - name: Build the controller docker image (tag)
       env:
+        DOCKERHUB_PUSH_TOKEN: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+        SERVICE_ACCOUNT_JSON_KEY: ${{ secrets.SERVICE_ACCOUNT_JSON_KEY }}
         CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
         TAG:  ${{ github.ref_name }}
-      run: bash cicd-scripts/push-to-helm-branch.sh $TAG
+      run: bash build-and-push.sh $TAG
