@@ -143,11 +143,17 @@ echo "========================="
 echo ""
 cd ..
 git checkout generated
-ls | grep -xv "operator" | sed "s#^#rm -f #" | sh
+# remove all files except operator folder
+ls | grep -xv "operator" | grep -xv "." | grep -xv ".." | sed "s#^#rm -rf #" | sh
+# move files from operator folder
 mv operator/* .
 mv operator/.* .
-rm -f operator
+# delete operator folder
+rm -rf operator
+# addd version
 echo $VERSION > version
+# add all files to git
 git add .
+# commit and push
 git commit -m "version $VERSION"
 git push --set-upstream origin generated
