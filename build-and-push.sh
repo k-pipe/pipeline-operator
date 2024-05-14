@@ -142,6 +142,9 @@ echo "Push to branch generated "
 echo "========================="
 echo ""
 cd ..
+# move folder test
+mv test operator
+# go to branch "generated", this will keep the folder "operator" since it is not checked in into main
 git checkout generated
 # remove all files except operator folder
 ls | grep -xv "operator" | grep -xv "." | grep -xv ".." | sed "s#^#rm -rf #" | sh
