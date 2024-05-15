@@ -131,6 +131,11 @@ echo "Building             "
 echo "====================="
 echo ""
 make build
+if [ $? != 0 ]
+then
+  echo Build failed
+  exit 1
+fi
 echo "============================"
 echo "  Logging in to dockerhub"
 echo "============================"
