@@ -21,6 +21,7 @@ jobs:
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
+        if: ${{ ! startsWith(github.actor, 'cicd') }}
         run: |
           echo "CICD triggered by: $GITHUB_ACTOR"
           echo "commit message: $COMMIT_MESSAGE"
