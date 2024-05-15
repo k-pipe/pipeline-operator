@@ -162,17 +162,22 @@ mkdir operator/main
 mv source/tests operator/main
 # move folder api to be also copied to generated branch
 mv source/api operator/main
+ls -l operator
+ls -l operator/main
 # go to branch "generated", this will keep the folder "operator" since it is not checked in into main
 git checkout generated
+ls -l operator
+ls -l operator/main
 # remove all files except operator folder
 ls | grep -xv "operator" | grep -xv "." | grep -xv ".." | sed "s#^#rm -rf #" | sh
 # move files from operator folder
 mv operator/* .
 # delete operator folder
 rm -rf operator
-# addd version
+# add version
 echo $VERSION > version
 # add all files to git
+ls -l
 git add -A .
 # commit and push
 git commit -m "version $VERSION"
