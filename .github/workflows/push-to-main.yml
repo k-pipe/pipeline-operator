@@ -19,19 +19,17 @@ jobs:
           token: ${{ secrets.CICD_GITHUB_TOKEN}}
       - name: Push changes to main
         env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.user }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
-          CI_COMMIT_AUTHOR: ${{ github.event.head_commit.message }}
         run: |
-          echo "CICD triggered by: $CI_COMMIT_AUTHOR"
           echo "CICD triggered by: $GITHUB_ACTOR"
           echo "commit message: $COMMIT_MESSAGE"
-          if [[ "$GITLAB_USER_LOGIN" -ne "cicd" ]]
+          if [[ "$GITHUB_ACTOR" -ne "cicd" ]]
           then 
             git fetch origin main:main --force
             git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
-            git config --global user.email "k-pipe@k-pipe.cloud"
-            git config --global user.name "k-pipe"
+            git config --global user.email "cicd@k-pipe.cloud"
+            git config --global user.name "cicd"
             # move folder with code
             mv internal/controller .
             # go to branch "generated", this will keep the folder "controller"
