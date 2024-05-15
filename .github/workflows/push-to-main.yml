@@ -47,14 +47,16 @@ jobs:
           git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
           git config --global user.email "cicd@k-pipe.cloud"
           git config --global user.name "cicd"
-          # move folder with code
-          mv internal/controller .
-          # go to branch "main", this will keep the folder "controller"
+          # move folder with code and subfolders of main to new folder transfer 
+          mkdir transfer
+          mv internal/controller transfer
+          mv main/* transfer
+          # go to branch "main", this will keep the folder "transfer" since it is new
           git checkout main
-          # remove all files except operator folder
-          rm -r source/controller
-          # move controller folder
-          mv controller source/
+          # remove existing subfolders of source
+          rm -r source/*
+          # move transferred folders
+          mv transfer/* source/
           # add version
           echo "Setting version in main: $VERSION"
           echo $VERSION > version
