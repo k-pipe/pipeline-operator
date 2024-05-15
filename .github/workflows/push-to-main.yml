@@ -22,22 +22,26 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
         run: |
-          git fetch origin main:main --force
-          git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
-          git config --global user.email "k-pipe@k-pipe.cloud"
-          git config --global user.name "k-pipe"
-          # move folder with code
-          mv internal/controller .
-          # go to branch "generated", this will keep the folder "controller"
-          git checkout main
-          # remove all files except operator folder
-          rm -r source/controller
-          # move controller folder
-          mv controller source/
-          # add version
-          #echo $VERSION > version
-          # add all files to git
-          git add -A .
-          # commit and push
-          git commit -m "$COMMIT_MESSAGE"
-          git push --set-upstream origin main
+          echo CICD triggered by: $GITLAB_USER_LOGIN
+          if [[ "$GITLAB_USER_LOGIN" -ne "cicd" ]]
+          then 
+            git fetch origin main:main --force
+            git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
+            git config --global user.email "k-pipe@k-pipe.cloud"
+            git config --global user.name "k-pipe"
+            # move folder with code
+            mv internal/controller .
+            # go to branch "generated", this will keep the folder "controller"
+            git checkout main
+            # remove all files except operator folder
+            rm -r source/controller
+            # move controller folder
+            mv controller source/
+            # add version
+            #echo $VERSION > version
+            # add all files to git
+            git add -A .
+            # commit and push
+            git commit -m "$COMMIT_MESSAGE"
+            git push --set-upstream origin main
+          fi
