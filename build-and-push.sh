@@ -21,20 +21,10 @@ git remote set-url origin https://cicd-k-pipe:$CICD_GITHUB_TOKEN@$REPO.git
 git config --global user.email "cicd@k-pipe.cloud"
 git config --global user.name "cicd-k-pipe"
 #
-if [[ "$1" = "" ]]
-then
-  echo ""
-  echo "=================="
-  echo "Increasing version"
-  echo "=================="
-  echo ""
-  PREVIOUS_VERSION=`git show helm:version`
-  echo Previous version: $PREVIOUS_VERSION
-  VERSION=`echo $PREVIOUS_VERSION | sed 's#[0-9]*$##'``echo $PREVIOUS_VERSION+1 | sed "s#^.*\.##" | bc -l`
-else
-  VERSION=$1
-fi
-echo Setting version to: $VERSION
+VERSION=`cat version`
+echo "Tagging version: $VERSION"
+git tag $VERSION
+git push origin $VERSION
 #
 # do installation in tmp folder
 #
@@ -167,8 +157,10 @@ echo "Push to branch generated "
 echo "========================="
 echo ""
 cd ..
-# move folder tests
+# move folder tests to be also copied to generated branch
 mv tests operator
+# move folder api to be also copied to generated branch
+mv source/api operator
 # go to branch "generated", this will keep the folder "operator" since it is not checked in into main
 git checkout generated
 # remove all files except operator folder
