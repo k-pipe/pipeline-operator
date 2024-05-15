@@ -2,7 +2,6 @@ GO_VERSION=1.21.9
 DOMAIN=k-pipe.cloud
 DOCKER_USER=kpipe
 GITHUB_USER=k-pipe
-CICD_USER=cicd
 APP_NAME=pipeline-operator
 GROUP=pipeline
 API_VERSION=v1
@@ -18,9 +17,9 @@ echo "==========================="
 echo ""
 git fetch origin helm:helm --force
 git fetch origin generated:generated --force
-git remote set-url origin https://$GITHUB_USER:$CICD_GITHUB_TOKEN@$REPO.git
-git config --global user.email "$CICD_USER@$DOMAIN"
-git config --global user.name "$CICD_USER"
+git remote set-url origin https://cicd-k-pipe:$CICD_GITHUB_TOKEN@$REPO.git
+git config --global user.email "cicd@k-pipe.cloud"
+git config --global user.name "cicd-k-pipe"
 #
 if [[ "$1" = "" ]]
 then
