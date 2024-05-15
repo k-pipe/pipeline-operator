@@ -1,5 +1,5 @@
 /*
-Copyright 2024.
+Copyright 2022.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,13 +18,21 @@ package controller
 
 import (
 	"context"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
+	schedulev1 "github.com/k-pipe/pipeline-operator/api/v1"
+)
+
+const (
+	// minute
+	DefaultReconciliationInterval = 5
 )
 
 // TDSetReconciler reconciles a TDSet object
@@ -36,27 +44,74 @@ type TDSetReconciler struct {
 //+kubebuilder:rbac:groups=pipeline.k-pipe.cloud,resources=tdsets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=pipeline.k-pipe.cloud,resources=tdsets/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=pipeline.k-pipe.cloud,resources=tdsets/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the TDSet object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *TDSetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	log.Info("starting reconciliation")
 
-	return ctrl.Result{}, nil
+	tdSet := &schedulev1.TDSet{}
+
+	// Get the TDSet
+	err := r.GetTDSet(ctx, req, tdSet)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("TDSet resource not found. Ignoring since object must be deleted")
+
+			return ctrl.Result{}, nil
+		}
+
+		log.Error(err, "Failed to get TDSet")
+
+		return ctrl.Result{}, err
+	}
+
+	// Try to set initial condition status
+	err = r.SetInitialCondition(ctx, req, tdSet)
+	if err != nil {
+		log.Error(err, "failed to set initial condition")
+
+		return ctrl.Result{}, err
+	}
+
+	// TODO: Delete finalizer
+
+	// Deployment if not exist
+	ok, err := r.DeploymentIfNotExist(ctx, req, tdSet)
+	if err != nil {
+		log.Error(err, "failed to deploy deployment for TDSet")
+
+		return ctrl.Result{}, err
+	}
+
+	if ok {
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	}
+
+	// Update deployment replica if mis matched.
+	err = r.UpdateDeploymentReplica(ctx, req, tdSet)
+	if err != nil {
+		log.Error(err, "failed to update deployment for TDSet")
+
+		return ctrl.Result{}, err
+	}
+
+	interval := DefaultReconciliationInterval
+	if tdSet.Spec.IntervalMint != 0 {
+		interval = int(tdSet.Spec.IntervalMint)
+	}
+
+	log.Info("ending reconciliation")
+
+	return ctrl.Result{RequeueAfter: time.Duration(time.Minute * time.Duration(interval))}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *TDSetReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pipelinev1.TDSet{}).
+		For(&schedulev1.TDSet{}).
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
