@@ -25,25 +25,25 @@ jobs:
         run: |
           echo "CICD triggered by: $GITHUB_ACTOR"
           echo "commit message: $COMMIT_MESSAGE"
-          if [[ "$GITHUB_ACTOR" -ne "cicd" ]]
-          then 
-            git fetch origin main:main --force
-            git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
-            git config --global user.email "cicd@k-pipe.cloud"
-            git config --global user.name "cicd"
-            # move folder with code
-            mv internal/controller .
-            # go to branch "generated", this will keep the folder "controller"
-            git checkout main
-            # remove all files except operator folder
-            rm -r source/controller
-            # move controller folder
-            mv controller source/
-            # add version
-            #echo $VERSION > version
-            # add all files to git
-            git add -A .
-            # commit and push
-            git commit -m "$COMMIT_MESSAGE"
-            git push --set-upstream origin main
-          fi
+          git fetch origin main:main --force
+          git remote set-url origin https://k-pipe:$CICD_GITHUB_TOKEN@github.com/k-pipe/pipeline-operator.git
+          git config --global user.email "cicd@k-pipe.cloud"
+          git config --global user.name "cicd"
+          # move folder with code
+          mv internal/controller .
+          # read version
+          VERSION=`cat version`
+          # go to branch "generated", this will keep the folder "controller"
+          git checkout main
+          # remove all files except operator folder
+          rm -r source/controller
+          # move controller folder
+          mv controller source/
+          # add version
+          echo "Setting version in main: $VERSION"
+          echo $VERSION > version
+          # add all files to git
+          git add -A .
+          # commit and push
+          git commit -m "$COMMIT_MESSAGE"
+          git push --set-upstream origin main
