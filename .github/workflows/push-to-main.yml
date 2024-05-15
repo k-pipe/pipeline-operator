@@ -21,6 +21,7 @@ jobs:
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
+          CI_COMMIT_AUTHOR: ${{ ithub.event.head_commit.author }}
         run: |
           echo CICD triggered by: $CI_COMMIT_AUTHOR
           if [[ "$GITLAB_USER_LOGIN" -ne "cicd" ]]
