@@ -158,9 +158,10 @@ echo "========================="
 echo ""
 cd ..
 # move folder tests to be also copied to generated branch
-mv tests operator
+mkdir operator/main
+mv tests operator/main
 # move folder api to be also copied to generated branch
-mv source/api operator
+mv source/api operator/main
 # go to branch "generated", this will keep the folder "operator" since it is not checked in into main
 git checkout generated
 # remove all files except operator folder
