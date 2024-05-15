@@ -19,11 +19,13 @@ jobs:
           token: ${{ secrets.CICD_GITHUB_TOKEN}}
       - name: Push changes to main
         env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.user }}
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
           CI_COMMIT_AUTHOR: ${{ github.event.head_commit.message }}
         run: |
-          echo CICD triggered by: $CI_COMMIT_AUTHOR
+          echo "CICD triggered by: $CI_COMMIT_AUTHOR"
+          echo "CICD triggered by: $GITHUB_ACTOR"
+          echo "commit message: $COMMIT_MESSAGE"
           if [[ "$GITLAB_USER_LOGIN" -ne "cicd" ]]
           then 
             git fetch origin main:main --force
