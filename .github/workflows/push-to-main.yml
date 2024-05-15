@@ -22,7 +22,7 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           CICD_GITHUB_TOKEN: ${{ secrets.CICD_GITHUB_TOKEN }}
         run: |
-          echo CICD triggered by: $GITLAB_USER_LOGIN
+          echo CICD triggered by: $CI_COMMIT_AUTHOR
           if [[ "$GITLAB_USER_LOGIN" -ne "cicd" ]]
           then 
             git fetch origin main:main --force
