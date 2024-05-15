@@ -80,12 +80,22 @@ echo ""
 mkdir operator
 cd operator
 operator-sdk init --domain $DOMAIN --repo $REPO --plugins=$KUBEBUILDER_PLUGIN
+if [ $? != 0 ]
+then
+  echo Init operator failed
+  exit 1
+fi
 echo ""
 echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
 operator-sdk create api --group $GROUP --version $API_VERSION --kind $KIND --resource --controller
+if [ $? != 0 ]
+then
+  echo Creating API failed
+  exit 1
+fi
 echo ""
 echo "====================="
 echo "Adding api sources   "
@@ -99,6 +109,11 @@ echo "Generating manifests "
 echo "====================="
 echo ""
 make generate manifests
+if [ $? != 0 ]
+then
+  echo Generating manifests failed
+  exit 1
+fi
 echo ""
 echo "=========================="
 echo "Commit crds to helm branch"
