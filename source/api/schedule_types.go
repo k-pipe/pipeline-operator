@@ -27,7 +27,7 @@ type ScheduleInRange struct {
 	// +kubebuilder:validation:Optional
 	Before string `json:"before"`
 	// posix cron spec regex, see: https://www.codeproject.com/Tips/5299523/Regex-for-Cron-Expressions
-	// +kubebuilder:validation:Pattern:=[0-9]*
+	// +kubebuilder:validation:Pattern:=^[0-9]*$
 	// +kubebuilder:validation:Required
 	CronSpec string `json:"cronSpec"`
 	// semver 2 regex, see https://semver.org/
