@@ -81,6 +81,7 @@ echo "Creating api         "
 echo "====================="
 echo ""
 operator-sdk create api --group $GROUP --version $API_VERSION --kind $KIND --resource --controller
+operator-sdk create api --group $GROUP --version $API_VERSION --kind PipelineSchedule --resource --controller
 if [ $? != 0 ]
 then
   echo Creating API failed
