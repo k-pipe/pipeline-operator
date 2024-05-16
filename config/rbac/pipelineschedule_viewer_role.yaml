@@ -1,0 +1,27 @@
+# permissions for end users to view pipelineschedules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: pipelineschedule-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pipelineschedule-viewer-role
+rules:
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineschedules
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineschedules/status
+  verbs:
+  - get

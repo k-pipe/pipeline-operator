@@ -1,0 +1,12 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineSchedule
+metadata:
+  labels:
+    app.kubernetes.io/name: pipelineschedule
+    app.kubernetes.io/instance: pipelineschedule-sample
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: operator
+  name: pipelineschedule-sample
+spec:
+  # TODO(user): Add fields here

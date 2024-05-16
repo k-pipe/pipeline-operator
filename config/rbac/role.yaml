@@ -17,6 +17,32 @@ rules:
   - update
   - watch
 - apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineschedules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineschedules/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineschedules/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - schedule.kpipe
   resources:
   - tdsets
