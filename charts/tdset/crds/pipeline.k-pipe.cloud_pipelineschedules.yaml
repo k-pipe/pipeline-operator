@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: schedules.pipeline.k-pipe.cloud
+  name: pipelineschedules.pipeline.k-pipe.cloud
 spec:
   group: pipeline.k-pipe.cloud
   names:
-    kind: Schedule
-    listKind: ScheduleList
-    plural: schedules
-    singular: schedule
+    kind: PipelineSchedule
+    listKind: PipelineScheduleList
+    plural: pipelineschedules
+    singular: pipelineschedule
   scope: Namespaced
   versions:
   - name: v1
