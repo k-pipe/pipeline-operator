@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ScheduleInRange defines cron schedule and version pattern for a specified date range.
+/* ScheduleInRange defines cron schedule and version pattern for a specified date range. */
 type ScheduleInRange struct {
 	// +kubebuilder:validation:Optional
 	After string `json:"after"`
@@ -35,7 +35,7 @@ type ScheduleInRange struct {
 	VersionPattern string `json:"versionPattern"`
 }
 
-// ScheduleSpec defines the desired state of Schedule
+/* ScheduleSpec defines the desired state of Schedule */
 type ScheduleSpec struct {
 	// +kubebuilder:validation:Required
 	Pipeline string `json:"pipeline"`
@@ -70,9 +70,9 @@ type PipelineSchedule struct {
 type ScheduleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Schedule `json:"items"`
+	Items           []PipelineSchedule `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Schedule{}, &ScheduleList{})
+	SchemeBuilder.Register(&PipelineSchedule{}, &ScheduleList{})
 }
