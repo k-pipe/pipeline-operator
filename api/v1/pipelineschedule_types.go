@@ -20,45 +20,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// PipelineScheduleSpec defines the desired state of PipelineSchedule
-type PipelineScheduleSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of PipelineSchedule. Edit pipelineschedule_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+/* ScheduleInRange defines cron schedule and version pattern for a specified date range. */
+type ScheduleInRange struct {
+	// +kubebuilder:validation:Optional
+	After string `json:"after"`
+	// +kubebuilder:validation:Optional
+	Before string `json:"before"`
+	// posix cron spec regex, see: https://www.codeproject.com/Tips/5299523/Regex-for-Cron-Expressions
+	// +kubebuilder:validation:Pattern:=^[0-9]*$
+	// +kubebuilder:validation:Required
+	CronSpec string `json:"cronSpec"`
+	// semver 2 regex, see https://semver.org/
+	// +kubebuilder:validation:Required
+	VersionPattern string `json:"versionPattern"`
 }
 
-// PipelineScheduleStatus defines the observed state of PipelineSchedule
-type PipelineScheduleStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+/* ScheduleSpec defines the desired state of Schedule */
+type ScheduleSpec struct {
+	// +kubebuilder:validation:Required
+	Pipeline string `json:"pipeline"`
+	// +kubebuilder:validation:Required
+	Schedules []*ScheduleInRange `json:"schedules"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=1440
+	UpdateIntervalMinutes int32 `json:"updateIntervalMinutes"`
+}
+
+// ScheduleStatus defines the observed state of Schedule
+type ScheduleStatus struct {
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// PipelineSchedule is the Schema for the pipelineschedules API
+// TDSet is the Schema for the tdsets API
 type PipelineSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PipelineScheduleSpec   `json:"spec,omitempty"`
-	Status PipelineScheduleStatus `json:"status,omitempty"`
+	Spec   ScheduleSpec   `json:"spec,omitempty"`
+	Status ScheduleStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// PipelineScheduleList contains a list of PipelineSchedule
-type PipelineScheduleList struct {
+// TDSetList contains a list of TDSet
+type ScheduleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PipelineSchedule `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&PipelineSchedule{}, &PipelineScheduleList{})
+	SchemeBuilder.Register(&PipelineSchedule{}, &ScheduleList{})
 }
