@@ -18,10 +18,10 @@ the operator-sdk framework).
 
 All primary sources required to build and test the operator can be found in the `main` branch. Those are:
  
- * [build script](build-and-push.sh): script which is run on pushes to branch main (see [build.yml](.github/workflows/build.yml)
- * [src/api](src/api): go files that define the data types for the various CRDs
- * [src/controller](src/controller): go files that implement the reconcilation logics
- * [src/tests](src/tests): scripts useful for testing the operator on a kubernetes cluster
+ * [build script](build-and-push.sh): script which is run on pushes to branch main (see [build.yml](.github/workflows/build.yml))
+ * [src/api](https://github.com/k-pipe/pipeline-operator/tree/main/source/api): go files that define the data types for the various CRDs
+ * [src/controller](https://github.com/k-pipe/pipeline-operator/tree/main/source/controller): go files that implement the reconcilation logics
+ * [src/tests](https://github.com/k-pipe/pipeline-operator/tree/main/source/tests): scripts useful for testing the operator on a kubernetes cluster
  * [version](version): an automatically updated text file that holds the current release version
 
 During building on the main branch, generated files will be committed and pushed to the branches `helm` and `generated`.
@@ -84,9 +84,8 @@ performs the following actions:
 TBD
 
 ## Further material
-
-Building go based operators is done following this tutorial: https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/
-
-A nice introduction to kubernetes operators can be found here: https://shahin-mahmud.medium.com/write-your-first-kubernetes-operator-in-go-177047337eae
-
-Another medium article that was helpful in setting this up: https://www.faizanbashir.me/guide-to-create-kubernetes-operator-with-golang
+|                                           |                                                                                          |
+|-------------------------------------------|------------------------------------------------------------------------------------------|
+| Tutorial for building go based operators  | https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/                |
+| Nice introduction to kubernetes operators | https://shahin-mahmud.medium.com/write-your-first-kubernetes-operator-in-go-177047337eae |
+| Another medium article that was helpful   | https://www.faizanbashir.me/guide-to-create-kubernetes-operator-with-golang              |
