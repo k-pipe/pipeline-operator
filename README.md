@@ -48,8 +48,8 @@ The folldowing files are expected in branch `helm`:
 
  * [helm-chart.yml](https://github.com/k-pipe/pipeline-operator/blob/helm/.github/workflows/helm-chart.yml): 
    releases the helm chart using the predefined `chart-releaser-action` 
- * [charts/pipeline/crds](https://github.com/k-pipe/pipeline-operator/tree/helm/charts/tdset/crds): folder with the generated crd definitions
- * [charts/pipeline/templates](https://github.com/k-pipe/pipeline-operator/tree/helm/charts/tdset/templates): folder with yaml files that defined other parts of the helm chart (deployment, service account and roles)
+ * [charts/pipeline/crds](https://github.com/k-pipe/pipeline-operator/tree/helm/charts/pipeline/crds): folder with the generated crd definitions
+ * [charts/pipeline/templates](https://github.com/k-pipe/pipeline-operator/tree/helm/charts/pipeline/templates): folder with yaml files that defined other parts of the helm chart (deployment, service account and roles)
  * [README.md](https://github.com/k-pipe/pipeline-operator/blob/helm/README.md): the documentation of the pipeline operator
  * [version](https://github.com/k-pipe/pipeline-operator/blob/helm/version): the current version (copied from `main` branch)
 
@@ -87,7 +87,7 @@ To develop/debug locally, install a go compiler/IDE of your choice, start a Kube
 
 ```
 helm repo add k-pipe https://k-pipe.github.io/pipeline-operator/
-helm install k-pipe k-pipe/tdset-controller -n tdset
+helm install k-pipe k-pipe/pipeline-controller
 ```
 
 Checkout the branch `generated` of this repo and run the [go main file](https://github.com/k-pipe/pipeline-operator/blob/generated/cmd/main.go).

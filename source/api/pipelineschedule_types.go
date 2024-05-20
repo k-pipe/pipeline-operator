@@ -56,7 +56,7 @@ type PipelineScheduleStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=ps,singular=pipelineschedule
 
-// TDSet is the Schema for the tdsets API
+// Pipeline is the Schema for the pipelines API
 type PipelineSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -67,7 +67,7 @@ type PipelineSchedule struct {
 
 //+kubebuilder:object:root=true
 
-// TDSetList contains a list of TDSet
+// PipelineList contains a list of Pipeline
 type PipelineScheduleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

@@ -7,8 +7,8 @@ GROUP=pipeline
 API_VERSION=v1
 REPO=github.com/$GITHUB_USER/$APP_NAME
 KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
-KIND=TDSet
-LC_KIND=tdset
+KIND=Pipeline
+LC_KIND=pipeline
 #
 echo ""
 echo "==========================="
