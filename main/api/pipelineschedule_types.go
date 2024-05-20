@@ -54,6 +54,7 @@ type ScheduleStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=ps
 
 // TDSet is the Schema for the tdsets API
 type PipelineSchedule struct {
