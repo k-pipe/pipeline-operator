@@ -2,18 +2,19 @@
 
 This provides a kubernetes operator to define, run and schedule pipelines. 
 
-## Getting started with helm
+## Getting started using helm
+
+On a kubernetes cluster of your choice install the operator using the following commands:
 
 ```
 helm repo add k-pipe https://k-pipe.github.io/pipeline-operator/
 helm install k-pipe k-pipe/tdset-controller -n tdset
 ```
 
+You might then do ....
 
-## Background
 
-The operator is based on the operator framework (Go version): https://github.com/operator-framework/operator-sdk
-The setup is inspired by this excellent introduction to kubernetes operators: https://shahin-mahmud.medium.com/write-your-first-kubernetes-operator-in-go-177047337eae
-Another medium article that was helpful: https://www.faizanbashir.me/guide-to-create-kubernetes-operator-with-golang
+## Further information
 
-Note: example operator hosted as helm chart on github: https://backaged.github.io/tdset-operator/
+The operator is build in this [github project](https://github.com/k-pipe/pipeline-operator).
+Further technical details can be found there.
