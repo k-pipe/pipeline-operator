@@ -19,7 +19,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: PipelineSchedule is the Schema for the pipelines API
+        description: Pipeline is the Schema for the pipelines API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
