@@ -6,7 +6,7 @@ This repository builds the necessary ingredients for a kubernetes operator for p
  * a helm chart with a deployment of the operator, crd definitions and necessary RBAC definitions ([result here](https://k-pipe.github.io/pipeline-operator/))
 
 Documentation and usage examples of the pipeline operator can be found in the 
-[README of branch helm](https://github.com/k-pipe/pipeline-operator/blob/helm/README.md).
+[README of branch gh-pages](https://github.com/k-pipe/pipeline-operator/tree/gh-pages).
 
 ## Build-in-branches strategy
 
