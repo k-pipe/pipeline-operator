@@ -2,8 +2,8 @@
 
 This repository builds the necessary ingredients for a kubernetes operator for processing pipelines:
 
- * the docker image running the operator code
- * a helm chart with a deployment of the operator, crd definitions and necessary RBAC definitions
+ * the docker image running the operator code ([result here](https://hub.docker.com/repository/docker/kpipe/pipeline-operator/general))
+ * a helm chart with a deployment of the operator, crd definitions and necessary RBAC definitions ([result here](https://k-pipe.github.io/pipeline-operator/))
 
 Documentation and usage examples of the pipeline operator can be found in the 
 [README of branch helm](https://github.com/k-pipe/pipeline-operator/blob/helm/README.md).
@@ -81,7 +81,17 @@ performs the following actions:
 
 ## Developing locally
 
-TBD
+To develop/debug locally, install a go compiler/IDE of your choice, start a Kubernetes cluster and apply the helm chart:
+
+```
+helm repo add k-pipe https://k-pipe.github.io/pipeline-operator/
+helm install k-pipe k-pipe/tdset-controller -n tdset
+```
+
+Checkout the branch `generated` of this repo and run the [go main file](https://github.com/k-pipe/pipeline-operator/blob/generated/cmd/main.go).
+
+You can then apply some of the [test resources](https://github.com/k-pipe/pipeline-operator/tree/generated/main/tests) and observe the
+resulting actions logged to the console.
 
 ## Further material
 |                                           |                                                                                          |
