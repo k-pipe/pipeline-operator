@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "tdset.fullname" . }}
+  name: {{ include "pipeline.fullname" . }}
   labels:
-    {{- include "tdset.labels" . | nindent 4 }}
+    {{- include "pipeline.labels" . | nindent 4 }}
   namespace: {{ .Release.Namespace | quote }}
 spec:
   selector:
     matchLabels:
-      {{- include "tdset.selectorLabels" . | nindent 6 }}
+      {{- include "pipeline.selectorLabels" . | nindent 6 }}
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
@@ -17,7 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "tdset.selectorLabels" . | nindent 8 }}
+        {{- include "pipeline.selectorLabels" . | nindent 8 }}
     spec:
       securityContext:
         runAsNonRoot: false # TODO enable this again or at least make it configurable
@@ -45,5 +45,5 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      serviceAccountName: {{ include "tdset.serviceAccountName" . }}
+      serviceAccountName: {{ include "pipeline.serviceAccountName" . }}
       terminationGracePeriodSeconds: 10
