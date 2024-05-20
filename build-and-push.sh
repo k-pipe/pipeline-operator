@@ -7,8 +7,7 @@ GROUP=pipeline
 API_VERSION=v1
 REPO=github.com/$GITHUB_USER/$APP_NAME
 KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
-KIND=Pipeline
-LC_KIND=pipeline
+CHART=pipeline
 #
 echo ""
 echo "==========================="
@@ -80,7 +79,7 @@ echo "====================="
 echo "Creating api         "
 echo "====================="
 echo ""
-operator-sdk create api --group $GROUP --version $API_VERSION --kind $KIND --resource --controller
+operator-sdk create api --group $GROUP --version $API_VERSION --kind TDSet --resource --controller
 operator-sdk create api --group $GROUP --version $API_VERSION --kind PipelineSchedule --resource --controller
 if [ $? != 0 ]
 then
@@ -110,17 +109,17 @@ echo "=========================="
 echo "Commit crds to helm branch"
 echo "=========================="
 git checkout helm
-rm ../charts/$LC_KIND/crds/*.yaml
-cp ../operator/config/crd/bases/*.yaml ../charts/$LC_KIND/crds/
-ls -l ../charts/$LC_KIND/crds/
-git add ../charts/$LC_KIND/crds
+rm ../charts/$CHART/crds/*.yaml
+cp ../operator/config/crd/bases/*.yaml ../charts/$CHART/crds/
+ls -l ../charts/$CHART/crds/
+git add ../charts/$CHART/crds
 echo $VERSION > ../version
 git add ../version
-sed -i "s#version: .*#version: $VERSION#" ../charts/$LC_KIND/Chart.yaml
-sed -i "s#appVersion: .*#appVersion: $VERSION#" ../charts/$LC_KIND/Chart.yaml
-git add ../charts/$LC_KIND/Chart.yaml
-sed -i "s#version .*#version $VERSION#" ../charts/$LC_KIND/templates/NOTES.txt
-git add ../charts/$LC_KIND/templates/NOTES.txt
+sed -i "s#version: .*#version: $VERSION#" ../charts/$CHART/Chart.yaml
+sed -i "s#appVersion: .*#appVersion: $VERSION#" ../charts/$CHART/Chart.yaml
+git add ../charts/$CHART/Chart.yaml
+sed -i "s#version .*#version $VERSION#" ../charts/$CHART/templates/NOTES.txt
+git add ../charts/$CHART/templates/NOTES.txt
 git commit --allow-empty -m "version $VERSION"
 git push --set-upstream origin helm
 git checkout main
