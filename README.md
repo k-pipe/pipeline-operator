@@ -60,6 +60,8 @@ in each run of the cicd process of branch `helm`.
 
 The folldowing files are expected in branch `gh-pages`:
  * [index.yml](https://github.com/k-pipe/pipeline-operator/blob/gh-pages/index.yaml): file that lists all available releases of the site
+ * [README.md](https://github.com/k-pipe/pipeline-operator/blob/gh-pages/README.md): documentation of the helm package 
+   (instructions how to apply the helm chart and use the operator)
 
 ### Branch generated
 
