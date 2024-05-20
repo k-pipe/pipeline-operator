@@ -1,5 +1,6 @@
 #!/bin/sh
 echo uninstall chart
+kc delete crd pipelineschedules.pipeline.k-pipe.cloud
 helm uninstall k-pipe -n k-pipe
 echo remove repo
 helm repo remove k-pipe
