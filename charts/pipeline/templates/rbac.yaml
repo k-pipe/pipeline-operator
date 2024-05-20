@@ -19,7 +19,7 @@ rules:
   - apiGroups:
       - pipeline.k-pipe.cloud
     resources:
-      - pipelines
+      - pipelineschedules
     verbs:
       - create
       - delete
@@ -31,13 +31,13 @@ rules:
   - apiGroups:
       - pipeline.k-pipe.cloud
     resources:
-      - pipelines/finalizers
+      - pipelineschedules/finalizers
     verbs:
       - update
   - apiGroups:
       - pipeline.k-pipe.cloud
     resources:
-      - pipelines/status
+      - pipelineschedules/status
     verbs:
       - get
       - patch
