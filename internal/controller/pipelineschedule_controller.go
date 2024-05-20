@@ -49,7 +49,7 @@ type PipelineScheduleReconciler struct {
 func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	log.Info("starting reconciliation (pipelineschedule)")
+	log.Info("starting reconciliation (pipelineschedule v2)")
 
 	// TODO(user): your logic here
 
