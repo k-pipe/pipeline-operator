@@ -36,7 +36,7 @@ type ScheduleInRange struct {
 }
 
 /* ScheduleSpec defines the desired state of Schedule */
-type ScheduleSpec struct {
+type PipelineScheduleSpec struct {
 	// +kubebuilder:validation:Required
 	Pipeline string `json:"pipeline"`
 	// +kubebuilder:validation:Required
@@ -48,32 +48,32 @@ type ScheduleSpec struct {
 }
 
 // ScheduleStatus defines the observed state of Schedule
-type ScheduleStatus struct {
+type PipelineScheduleStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:shortName=ps
+//+kubebuilder:resource:shortName=ps,singular=pipelineschedule
 
 // TDSet is the Schema for the tdsets API
 type PipelineSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ScheduleSpec   `json:"spec,omitempty"`
-	Status ScheduleStatus `json:"status,omitempty"`
+	Spec   PipelineScheduleSpec   `json:"spec,omitempty"`
+	Status PipelineScheduleStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
 // TDSetList contains a list of TDSet
-type ScheduleList struct {
+type PipelineScheduleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PipelineSchedule `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&PipelineSchedule{}, &ScheduleList{})
+	SchemeBuilder.Register(&PipelineSchedule{}, &PipelineScheduleList{})
 }
