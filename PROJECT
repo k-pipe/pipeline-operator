@@ -17,7 +17,7 @@ resources:
   controller: true
   domain: k-pipe.cloud
   group: pipeline
-  kind: TDSet
+  kind: Pipeline
   path: github.com/k-pipe/pipeline-operator/api/v1
   version: v1
 - api:
