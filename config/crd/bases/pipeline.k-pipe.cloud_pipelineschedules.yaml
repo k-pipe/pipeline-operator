@@ -11,6 +11,8 @@ spec:
     kind: PipelineSchedule
     listKind: PipelineScheduleList
     plural: pipelineschedules
+    shortNames:
+    - ps
     singular: pipelineschedule
   scope: Namespaced
   versions:
