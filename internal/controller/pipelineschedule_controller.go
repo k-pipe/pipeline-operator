@@ -18,6 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -51,9 +54,67 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	log.Info("starting reconciliation (pipelineschedule v2)")
 
-	// TODO(user): your logic here
+	ps := &pipelinev1.PipelineSchedule{}
+	fmt.Println("=======================================================================")
+	fmt.Println("PipelineSchedule before Get:")
+	fmt.Println(ps)
+	fmt.Println("=======================================================================")
 
-	return ctrl.Result{}, nil
+	// Get the pipeline schedule
+	err := r.GetPipelineSchedule(ctx, req, ps)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("PipelineSchedule resource not found. Ignoring since object must be deleted")
+
+			return ctrl.Result{}, nil
+		}
+
+		log.Error(err, "Failed to get PipelineSchedule")
+
+		return ctrl.Result{}, err
+	}
+	fmt.Println("=======================================================================")
+	fmt.Println("PipelineSchedule after Get:")
+	fmt.Println(ps)
+	fmt.Println("=======================================================================")
+
+	// Try to set initial condition status
+	err = r.SetInitialPSCondition(ctx, req, ps)
+	if err != nil {
+		log.Error(err, "failed to set initial condition")
+
+		return ctrl.Result{}, err
+	}
+	fmt.Println("=======================================================================")
+	fmt.Println("PipelineSchedule after SetInitialCondition:")
+	fmt.Println(ps)
+	fmt.Println("=======================================================================")
+
+	// Deployment if not exist
+	ok, err := r.CronJobIfNotExist(ctx, req, ps)
+	if err != nil {
+		log.Error(err, "failed to deploy cronjob for PipelineSchedule")
+		return ctrl.Result{}, err
+	}
+
+	if ok {
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	}
+
+	// Update deployment replica if mis matched.
+	err = r.UpdateCronJob(ctx, req, ps)
+	if err != nil {
+		log.Error(err, "failed to update CronJob for PipelineSchedule")
+
+		return ctrl.Result{}, err
+	}
+
+	requeueIntervalMinutes := DefaultReconciliationInterval
+
+	log.Info("ending reconciliation")
+
+	// TODO this appears to be a bad use of duration, rewrite this!
+	return ctrl.Result{RequeueAfter: time.Duration(time.Minute * time.Duration(requeueIntervalMinutes))}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
