@@ -27,7 +27,7 @@ type ScheduleInRange struct {
 	// +kubebuilder:validation:Optional
 	Before string `json:"before"`
 	// https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
-	// +kubebuilder:validation:Pattern:=^(@(annually|yearly|monthly|weekly|daily|hourly|reboot))|(@every (\d+(ns|us|µs|ms|s|m|h))+)|((((\d+,)+\d+|(\d+(\/|-)\d+)|\d+|\*) ?){5,7})$
+	// +kubebuilder:validation:Pattern:=^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$
 	// +kubebuilder:validation:Required
 	CronSpec string `json:"cronSpec"`
 	// semver 2 regex, see https://semver.org/
