@@ -18,16 +18,17 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 /* ScheduleInRange defines cron schedule and version pattern for a specified date range. */
 type ScheduleInRange struct {
 	// +kubebuilder:validation:Optional
-	After string `json:"after"`
+	After time.Time `json:"after"`
 	// +kubebuilder:validation:Optional
-	Before string `json:"before"`
+	Before time.Time `json:"before"`
 	// https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
-	// +kubebuilder:validation:Pattern:=^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$
+	// +kubebuilder:validation:Pattern:=^.*$
 	// +kubebuilder:validation:Required
 	CronSpec string `json:"cronSpec"`
 	// semver 2 regex, see https://semver.org/
