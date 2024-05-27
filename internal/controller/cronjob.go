@@ -90,6 +90,7 @@ func (r *PipelineScheduleReconciler) CronJob(
 							Labels: podLabels,
 						},
 						Spec: corev1.PodSpec{
+							RestartPolicy: corev1.RestartPolicyNever,
 							Containers: []corev1.Container{{
 								Image:           "busybox",
 								Name:            schedule.Name,
@@ -263,7 +264,7 @@ func equalSpecs(scheduleRange *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) 
 		fmt.Printf("Change in timezone existence")
 		return false
 	}
-	if (scheduleRange != nil) && (*scheduleRange.TimeZone != *cj.Spec.TimeZone) {
+	if (scheduleRange.TimeZone != nil) && (*scheduleRange.TimeZone != *cj.Spec.TimeZone) {
 		fmt.Printf("Change in timezone value")
 		return false
 	}
