@@ -259,7 +259,7 @@ func (r *PipelineScheduleReconciler) UpdateCronJob(
 }
 
 func equalSpecs(scheduleRange *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) bool {
-	if (*scheduleRange.TimeZone == nil) != (cj.Spec.TimeZone == nil) {
+	if (scheduleRange.TimeZone == nil) != (cj.Spec.TimeZone == nil) {
 		fmt.Printf("Change in timezone existence")
 		return false
 	}
