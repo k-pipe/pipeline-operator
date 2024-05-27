@@ -259,20 +259,20 @@ func (r *PipelineScheduleReconciler) UpdateCronJob(
 }
 
 func equalSpecs(scheduleRange *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) bool {
-	if (scheduleRange.TimeZone == nil) != (cj.Spec.TimeZone == nil) {
-		fmt.Sprintf("Change in timezone existence")
+	if (*scheduleRange.TimeZone == nil) != (cj.Spec.TimeZone == nil) {
+		fmt.Printf("Change in timezone existence")
 		return false
 	}
 	if (scheduleRange != nil) && (*scheduleRange.TimeZone != *cj.Spec.TimeZone) {
-		fmt.Sprintf("Change in timezone value")
+		fmt.Printf("Change in timezone value")
 		return false
 	}
 	if scheduleRange.CronSpec != cj.Spec.Schedule {
-		fmt.Sprintf("Change in cron spec")
+		fmt.Printf("Change in cron spec")
 		return false
 	}
 	if scheduleRange.VersionPattern != cj.ObjectMeta.Labels[PipeLineVersionPatternLabel] {
-		fmt.Sprintf("Change in cron version pattenr")
+		fmt.Printf("Change in cron version pattenr")
 		return false
 	}
 	return true
