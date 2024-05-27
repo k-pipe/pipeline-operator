@@ -26,13 +26,16 @@ type ScheduleInRange struct {
 	After *string `json:"after"`
 	// +kubebuilder:validation:Optional
 	Before *string `json:"before"`
-	// posix cron spec regex, see: https://www.codeproject.com/Tips/5299523/Regex-for-Cron-Expressions
-	// +kubebuilder:validation:Pattern:=^[0-9]*$
+	// https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
+	// +kubebuilder:validation:Pattern:=^.*$
 	// +kubebuilder:validation:Required
 	CronSpec string `json:"cronSpec"`
 	// semver 2 regex, see https://semver.org/
 	// +kubebuilder:validation:Required
 	VersionPattern string `json:"versionPattern"`
+	// timezone to be used for cronjob
+	// +kubebuilder:validation:Optional
+	TimeZone *string `json:"timeZone"`
 }
 
 /* ScheduleSpec defines the desired state of Schedule */
