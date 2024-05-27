@@ -48,8 +48,13 @@ spec:
                     before:
                       type: string
                     cronSpec:
-                      description: 'posix cron spec regex, see: https://www.codeproject.com/Tips/5299523/Regex-for-Cron-Expressions'
-                      pattern: ^[0-9]*$
+                      description: https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
+                      pattern: ^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]))
+                        (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1]))
+                        (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$
+                      type: string
+                    timeZone:
+                      description: timezone to be used for cronjob
                       type: string
                     versionPattern:
                       description: semver 2 regex, see https://semver.org/
