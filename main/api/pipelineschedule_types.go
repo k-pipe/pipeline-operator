@@ -23,9 +23,9 @@ import (
 /* ScheduleInRange defines cron schedule and version pattern for a specified date range. */
 type ScheduleInRange struct {
 	// +kubebuilder:validation:Optional
-	After string `json:"after"`
+	After *string `json:"after"`
 	// +kubebuilder:validation:Optional
-	Before string `json:"before"`
+	Before *string `json:"before"`
 	// https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
 	// +kubebuilder:validation:Pattern:=^.*$
 	// +kubebuilder:validation:Required
