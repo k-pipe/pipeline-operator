@@ -12,5 +12,5 @@ metadata:
 spec:
   pipeline: "test-pipeline"
   schedules:
-    - cronSpec: "0 0 0 * *"
+    - cronSpec: "0 0 * * *"
       versionPattern: "dcd"
