@@ -95,11 +95,27 @@ func (r *PipelineScheduleReconciler) GetExpectedScheduleInRange(ctx context.Cont
 }
 
 // if before is nil, always return true, otherwise return if now is before it
-func isBefore(now time.Time, before *time.Time) bool {
-	return (before == nil) || now.Before(*before)
+func isBefore(now time.Time, before *string) bool {
+	if before == nil {
+		return true
+	}
+	t, err := time.Parse(time.RFC3339, *before)
+	if err != nil {
+		// TODO handle date format error
+		return false
+	}
+	return now.Before(t)
 }
 
 // if after is nil, always return true, otherwise return if now is after it
-func isAfter(now time.Time, after *time.Time) bool {
-	return (after == nil) || now.After(*after)
+func isAfter(now time.Time, after *string) bool {
+	if after == nil {
+		return true
+	}
+	t, err := time.Parse(time.RFC3339, *after)
+	if err != nil {
+		// TODO handle date format error
+		return false
+	}
+	return now.After(t)
 }

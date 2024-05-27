@@ -18,15 +18,14 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 /* ScheduleInRange defines cron schedule and version pattern for a specified date range. */
 type ScheduleInRange struct {
 	// +kubebuilder:validation:Optional
-	After time.Time `json:"after"`
+	After string `json:"after"`
 	// +kubebuilder:validation:Optional
-	Before time.Time `json:"before"`
+	Before string `json:"before"`
 	// https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
 	// +kubebuilder:validation:Pattern:=^.*$
 	// +kubebuilder:validation:Required
