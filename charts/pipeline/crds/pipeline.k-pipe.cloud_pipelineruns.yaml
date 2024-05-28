@@ -4,16 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: pipelineschedules.pipeline.k-pipe.cloud
+  name: pipelineruns.pipeline.k-pipe.cloud
 spec:
   group: pipeline.k-pipe.cloud
   names:
-    kind: PipelineSchedule
-    listKind: PipelineScheduleList
-    plural: pipelineschedules
+    kind: PipelineRun
+    listKind: PipelineRunList
+    plural: pipelineruns
     shortNames:
     - ps
-    singular: pipelineschedule
+    singular: PipelineRun
   scope: Namespaced
   versions:
   - name: v1
@@ -36,40 +36,22 @@ spec:
           spec:
             description: ScheduleSpec defines the desired state of Schedule
             properties:
+              description:
+                type: string
+              inputPipes:
+                items:
+                  type: string
+                type: array
+              parentRun:
+                type: string
               pipelineName:
                 type: string
-              schedules:
-                items:
-                  description: ScheduleInRange defines cron schedule and version pattern
-                    for a specified date range.
-                  properties:
-                    after:
-                      type: string
-                    before:
-                      type: string
-                    cronSpec:
-                      description: https://stackoverflow.com/questions/14203122/create-a-regular-expression-for-cron-statement
-                      pattern: ^.*$
-                      type: string
-                    timeZone:
-                      description: timezone to be used for cronjob
-                      type: string
-                    versionPattern:
-                      description: semver 2 regex, see https://semver.org/
-                      type: string
-                  required:
-                  - cronSpec
-                  - versionPattern
-                  type: object
-                type: array
-              updateIntervalMinutes:
-                format: int32
-                maximum: 1440
-                minimum: 1
-                type: integer
+              pipelineVersion:
+                type: string
             required:
+            - inputPipes
             - pipelineName
-            - schedules
+            - pipelineVersion
             type: object
           status:
             description: ScheduleStatus defines the observed state of Schedule
