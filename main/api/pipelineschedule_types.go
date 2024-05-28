@@ -25,7 +25,7 @@ type ScheduleInRange struct {
 /* ScheduleSpec defines the desired state of Schedule */
 type PipelineScheduleSpec struct {
 	// +kubebuilder:validation:Required
-	Pipeline string `json:"pipeline"`
+	PipelineName string `json:"pipelineName"`
 	// +kubebuilder:validation:Required
 	Schedules []*ScheduleInRange `json:"schedules"`
 	// +kubebuilder:validation:Optional
