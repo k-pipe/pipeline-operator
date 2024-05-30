@@ -76,9 +76,15 @@ then
 fi
 echo ""
 echo "====================="
-echo "Creating api         "
+echo "Creating apis        "
 echo "====================="
 echo ""
+APIS=`ls -1 source/api`
+for APISOURCE in APIS
+do
+   KIND=`cat $APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
+   echo 'Creating kind $KIND (source: $APISOURCE)'
+done
 operator-sdk create api --group $GROUP --version $API_VERSION --kind TDSet --resource --controller
 operator-sdk create api --group $GROUP --version $API_VERSION --kind PipelineSchedule --resource --controller
 if [ $? != 0 ]
