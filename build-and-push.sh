@@ -8,6 +8,9 @@ API_VERSION=v1
 REPO=github.com/$GITHUB_USER/$APP_NAME
 KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
 CHART=pipeline
+
+mkdir operator
+cd operator
 echo ""
 echo "====================="
 echo "Creating apis        "
