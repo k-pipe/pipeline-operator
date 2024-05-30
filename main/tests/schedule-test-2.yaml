@@ -1,0 +1,16 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineSchedule
+metadata:
+  labels:
+    app.kubernetes.io/name: schedule-test-2
+    app.kubernetes.io/instance: schedule-test-2
+    app.kubernetes.io/part-of: kpipe
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kpipe
+  name: schedule-test-2
+  namespace: k-pipe
+spec:
+  pipelineName: "test-pipeline"
+  schedules:
+    - cronSpec: "0 4 * * *"
+      versionPattern: "mypattern"

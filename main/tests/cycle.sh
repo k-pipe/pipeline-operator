@@ -1,6 +1,9 @@
 #!/bin/sh
 echo uninstall chart
-kubectl delete crd pipelineschedules.pipeline.k-pipe.cloud
+for CRD in pipelinedefinitions pipelinejobs pipelineruns pipelineschedules
+do
+   kubectl delete crd $CRD.pipeline.k-pipe.cloud
+done
 helm uninstall k-pipe -n k-pipe
 echo remove repo
 helm repo remove k-pipe

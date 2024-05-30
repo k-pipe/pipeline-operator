@@ -1,0 +1,21 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineSchedule
+metadata:
+  labels:
+    app.kubernetes.io/name: schedule-test-1
+    app.kubernetes.io/instance: schedule-test-1
+    app.kubernetes.io/part-of: kpipe
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kpipe
+  name: schedule-test-1
+  namespace: k-pipe
+spec:
+  pipeline: "test-pipeline"
+  schedules:
+    - before: 2024-05-30T15:28:00+02:00
+      cronSpec: "0 0 * * *"
+      versionPattern: "dcd"
+    - after: 2024-05-30T15:30:00+02:00
+      before: 2024-05-30T15:31:00+02:00
+      cronSpec: "0 1 * * *"
+      versionPattern: "dcd"

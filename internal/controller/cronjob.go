@@ -100,6 +100,13 @@ func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, schedule
 		},
 	}
 
+	// Set the ownerRef for the CronJob
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+	if err := ctrl.SetControllerReference(schedule, cj, r.Scheme); err != nil {
+		log.Error(err, "failed to set controller owner reference")
+		return err
+	}
+
 	// create the cronjob
 	log.Info(
 		"Creating a new Cronjob",
@@ -113,13 +120,6 @@ func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, schedule
 			"CronJob.Namespace", schedule.Namespace,
 			"CronJob.Name", schedule.Name,
 		)
-	}
-
-	// Set the ownerRef for the CronJob
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
-	if err := ctrl.SetControllerReference(schedule, cj, r.Scheme); err != nil {
-		log.Error(err, "failed to set controller owner reference")
-		return err
 	}
 
 	return nil

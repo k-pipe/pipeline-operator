@@ -20,6 +20,8 @@ import (
 	"context"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +35,8 @@ import (
 // PipelineScheduleReconciler reconciles a PipelineSchedule object
 type PipelineScheduleReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=pipeline.k-pipe.cloud,resources=pipelineschedules,verbs=get;list;watch;create;update;patch;delete
@@ -51,11 +54,10 @@ type PipelineScheduleReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	log.Info("starting reconciliation (pipelineschedule v2)")
+	//log.Info("Starting reconciliation (PipelineSchedule)")
 
 	// TODO make this configurable!
 	requeue := ctrl.Result{RequeueAfter: time.Minute}
-	noResult := ctrl.Result{}
 
 	// get the pipeline schedule by name from request
 	ps, err := r.GetPipelineSchedule(ctx, req.NamespacedName)
@@ -66,93 +68,94 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if err != nil {
 		// any other error will be logged
-		log.Error(err, "Failed to get PipelineSchedule")
-		return noResult, err
+		return r.failed("Failed to get PipelineSchedule", ps), err
 	}
 
 	// determine which schedule is expected (this depends on current time)
 	sir, err := r.GetExpectedScheduleInRange(ctx, *ps)
 	if err != nil {
-		log.Error(err, "failed to determine expected schedule")
-		return noResult, err
+		return r.failed("Failed to determine expected schedule", ps), err
 	}
 
 	// get the cronjob with identical name
 	cj, err := r.GetCronJob(ctx, req.NamespacedName)
 	if err != nil {
-		log.Error(err, "failed to get cronjob from API")
-		return noResult, err
+		return r.failed("Failed to get cronjob from API", ps), err
 	}
 
 	// if state is consistent with expectation, end conciliation
-	if consistent, message := stateConsistent(sir, cj); consistent {
-		// set "UpdateRequired" to false
-		err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, message)
-		if err != nil {
-			log.Error(err, "failed to clear UpdateRequiredStatus")
-			return noResult, err
+	consistent, message := stateConsistent(sir, cj)
+	if consistent {
+		// is consistent, set "UpdateRequired" to false
+		if err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, message); err != nil {
+			return r.failed("Failed to clear UpdateRequiredStatus", ps), err
 		}
 		// end reconcilition
+		//log.Info("Nothing to reconcile")
 		return requeue, nil
 	} else {
+		log.Info("Reconciliation started (" + message + ")")
 		// set UpdateRequired to true
-		err := r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionTrue, message)
-		if err != nil {
-			log.Error(err, "failed to set UpdateRequiredStatus")
-			return noResult, err
+		if err := r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionTrue, message); err != nil {
+			return r.failed("Failed to set UpdateRequiredStatus", ps), err
 		}
 	}
 
 	// if no schedule in range, delete cronjob
-	var message string
+	var event string
 	if sir == nil {
 		log.Info("No schedule in current time range expected, deleting CronJob")
-		err := r.DeleteCronJob(ctx, cj)
-		if err != nil {
-			log.Error(err, "failed to delete CronJob")
-			return noResult, err
+		if err := r.DeleteCronJob(ctx, cj); err != nil {
+			return r.failed("Failed to delete CronJob", ps), err
 		}
-		message = "CronJob has been deleted"
+		event = "CronJob has been deleted"
 	} else {
 		// if no cronjob exists, create one
 		if cj == nil {
-			err := r.CreateCronJob(ctx, ps, *sir)
-			if err != nil {
-				log.Error(err, "failed to create CronJob")
-				return noResult, err
+			if err := r.CreateCronJob(ctx, ps, *sir); err != nil {
+				return r.failed("Failed to create CronJob", ps), err
 			}
-			message = "CronJob has been created"
+			event = "CronJob has been created"
 		} else {
 			// update existing cronjob with new schedule in range
-			err := r.UpdateCronJob(ctx, *sir, cj)
-			if err != nil {
-				log.Error(err, "failed to update CronJob")
-				return noResult, err
+			if err := r.UpdateCronJob(ctx, *sir, cj); err != nil {
+				return r.failed("Failed to update CronJob", ps), err
 			}
-			message = "CronJob has been updated"
+			event = "CronJob has been updated"
 		}
 	}
 
-	// clear UpdateRequired status again
-	err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, message)
-	if err != nil {
-		log.Error(err, "failed to clear UpdateRequiredStatus")
-		return noResult, err
+	// register an event for the executed action
+	r.Recorder.Event(ps, "Normal", "Reconciliation", event+" ("+message+")")
+
+	// refetch the pipeline schedule object
+	if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
+		return r.failed("Failed to re-fetch PipelineSchedule", ps), err
 	}
 
-	log.Info("done with reconciliation")
+	// clear UpdateRequired status
+	if err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, event); err != nil {
+		return r.failed("Failed to clear UpdateRequiredStatus", ps), err
+	}
+
+	log.Info("Done with reconciliation")
 	return requeue, nil
+}
+
+func (r *PipelineScheduleReconciler) failed(errormessage string, ps *pipelinev1.PipelineSchedule) ctrl.Result {
+	r.Recorder.Event(ps, "Warning", "ReconciliationError", errormessage)
+	return ctrl.Result{}
 }
 
 // determine if given ScheduleInRange is consistent with CronJob
 func stateConsistent(sir *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) (bool, string) {
 	if (sir == nil) && (cj != nil) {
 		// one is nil, the other isn't --> inconsistent state
-		return false, "CronJob should exist, but doesn't"
+		return false, "CronJob exists, but shouldn't"
 	}
 	if (sir != nil) && (cj == nil) {
 		// one is nil, the other isn't --> inconsistent state
-		return false, "CronJob exists, but shouldn't"
+		return false, "CronJob should exist, but doesn't"
 	}
 	if sir == nil {
 		// both are nil --> consistent state
@@ -180,7 +183,9 @@ func stateConsistent(sir *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) (bool
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PipelineScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("pipeline-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&pipelinev1.PipelineSchedule{}).
+		Owns(&batchv1.CronJob{}).
 		Complete(r)
 }
