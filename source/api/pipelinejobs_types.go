@@ -4,14 +4,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-/* JobSpec encapsulates the details of the kubernetes job wrapped by PipelineStepJob */
+/* JobSpec encapsulates the details of the kubernetes job wrapped by PipelineJob */
 type JobSpec struct {
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
 }
 
-/* PipelineStepJobSpec defines the specs of a PipelineStep */
-type PipelineStepJobSpec struct {
+/* PipelineJobSpec defines the specs of a PipelineStep */
+type PipelineJobSpec struct {
 	// +kubebuilder:validation:Required
 	PipelineName string `json:"pipelineName"`
 	// +kubebuilder:validation:Required
@@ -29,32 +29,32 @@ type PipelineStepJobSpec struct {
 }
 
 // ScheduleStatus defines the observed state of Schedule
-type PipelineStepJobStatus struct {
+type PipelineJobStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:shortName=ps,singular=PipelineStep
+//+kubebuilder:resource:shortName=pj,singular=pipelinejob
 
 // Pipeline is the Schema for the pipelines API
-type PipelineStepJob struct {
+type PipelineJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PipelineStepJobSpec   `json:"spec,omitempty"`
-	Status PipelineStepJobStatus `json:"status,omitempty"`
+	Spec   PipelineJobSpec   `json:"spec,omitempty"`
+	Status PipelineJobStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
 // PipelineList contains a list of Pipeline
-type PipelineStepJobList struct {
+type PipelineJobList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []PipelineStepJob `json:"items"`
+	Items           []PipelineJob `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&PipelineStepJob{}, &PipelineStepJobList{})
+	SchemeBuilder.Register(&PipelineJob{}, &PipelineJobList{})
 }
