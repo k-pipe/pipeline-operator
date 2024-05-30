@@ -36,7 +36,7 @@ spec:
           spec:
             description: ScheduleSpec defines the desired state of Schedule
             properties:
-              pipeline:
+              pipelineName:
                 type: string
               schedules:
                 items:
@@ -68,7 +68,7 @@ spec:
                 minimum: 1
                 type: integer
             required:
-            - pipeline
+            - pipelineName
             - schedules
             type: object
           status:
