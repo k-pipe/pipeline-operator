@@ -12,7 +12,7 @@ spec:
     listKind: PipelineRunList
     plural: pipelineruns
     shortNames:
-    - ps
+    - pj
     singular: pipelinerun
   scope: Namespaced
   versions:
