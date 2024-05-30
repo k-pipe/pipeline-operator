@@ -12,7 +12,7 @@ spec:
     listKind: PipelineDefinitionList
     plural: pipelinedefinitions
     shortNames:
-    - ps
+    - pd
     singular: pipelinedefinition
   scope: Namespaced
   versions:

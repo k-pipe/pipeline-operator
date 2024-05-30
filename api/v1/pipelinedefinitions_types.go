@@ -59,7 +59,7 @@ type PipelineDefinitionStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:shortName=ps,singular=pipelinedefinition
+//+kubebuilder:resource:shortName=pd,singular=pipelinedefinition
 
 // Pipeline is the Schema for the pipelines API
 type PipelineDefinition struct {
