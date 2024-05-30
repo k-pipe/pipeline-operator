@@ -4,16 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: pipelinestepjobs.pipeline.k-pipe.cloud
+  name: pipelinejobs.pipeline.k-pipe.cloud
 spec:
   group: pipeline.k-pipe.cloud
   names:
-    kind: PipelineStepJob
-    listKind: PipelineStepJobList
-    plural: pipelinestepjobs
+    kind: PipelineJob
+    listKind: PipelineJobList
+    plural: pipelinejobs
     shortNames:
-    - ps
-    singular: PipelineStep
+    - pj
+    singular: pipelinejob
   scope: Namespaced
   versions:
   - name: v1
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: PipelineStepJobSpec defines the specs of a PipelineStep
+            description: PipelineJobSpec defines the specs of a PipelineStep
             properties:
               description:
                 type: string
@@ -44,7 +44,7 @@ spec:
                 type: array
               jobSpec:
                 description: JobSpec encapsulates the details of the kubernetes job
-                  wrapped by PipelineStepJob
+                  wrapped by PipelineJob
                 properties:
                   image:
                     type: string

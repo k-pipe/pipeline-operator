@@ -13,7 +13,7 @@ spec:
     plural: pipelinedefinitions
     shortNames:
     - ps
-    singular: PipelineDefinition
+    singular: pipelinedefinition
   scope: Namespaced
   versions:
   - name: v1
