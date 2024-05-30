@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -9,74 +11,62 @@ import (
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-// Defines condition status of a pipeline schedule.
-type PipelineScheduleStatus string
 
 const (
-	ScheduleAvailable   PipelineScheduleStatus = "Available"
-	ScheduleProgressing PipelineScheduleStatus = "Progressing"
-	ScheduleDegraded    PipelineScheduleStatus = "Degraded"
+	UpdateRequired string = "UpdateRequired"
 )
 
-// Gets the pipeline schedule status from api server.
-func (r *PipelineScheduleReconciler) GetPipelineSchedule(ctx context.Context, req ctrl.Request, schedule *pipelinev1.PipelineSchedule) error {
-	err := r.Get(ctx, req.NamespacedName, schedule)
+// Gets a pipeline schedule object by name from api server, returns nil,nil if not found
+func (r *PipelineScheduleReconciler) GetPipelineSchedule(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineSchedule, error) {
+	res := &pipelinev1.PipelineSchedule{}
+	err := r.Get(ctx, name, res)
 	if err != nil {
-		return err
+		// no result will be returned in case of error
+		res = nil
+		if apierrors.IsNotFound(err) {
+			// not found is not considered an error, we simply return nil,nil in that case
+			err = nil
+		}
 	}
-
-	return nil
+	return res, err
 }
 
 // Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
-func (r *PipelineScheduleReconciler) SetInitialPSCondition(ctx context.Context, req ctrl.Request, schedule *pipelinev1.PipelineSchedule) error {
-	if schedule.Status.Conditions != nil || len(schedule.Status.Conditions) != 0 {
+func (r *PipelineScheduleReconciler) SetUpdateRequiredStatus(ctx context.Context, ps *pipelinev1.PipelineSchedule, status metav1.ConditionStatus, message string) error {
+	log := log.FromContext(ctx)
+
+	if meta.IsStatusConditionPresentAndEqual(ps.Status.Conditions, UpdateRequired, status) {
+		// no change in status
 		return nil
 	}
 
-	err := r.SetPSCondition(ctx, req, schedule, ScheduleAvailable, "Starting reconciliation")
-
-	return err
-}
-
-// Sets the status condition of the pipelineschedule.
-func (r *PipelineScheduleReconciler) SetPSCondition(
-	ctx context.Context, req ctrl.Request,
-	schedule *pipelinev1.PipelineSchedule, condition PipelineScheduleStatus,
-	message string,
-) error {
-	log := log.FromContext(ctx)
-
+	// set the status condition
 	meta.SetStatusCondition(
-		&schedule.Status.Conditions,
+		&ps.Status.Conditions,
 		metav1.Condition{
-			Type:    string(condition),
-			Status:  metav1.ConditionUnknown,
+			Type:    UpdateRequired,
+			Status:  status,
 			Reason:  "Reconciling",
 			Message: message,
 		},
 	)
 
-	if err := r.Status().Update(ctx, schedule); err != nil {
+	if err := r.Status().Update(ctx, ps); err != nil {
 		log.Error(err, "Failed to update PipelineSchedule status")
-
 		return err
 	}
 
-	if err := r.Get(ctx, req.NamespacedName, schedule); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
 		log.Error(err, "Failed to re-fetch PipelineSchedule")
-
 		return err
 	}
 
 	return nil
 }
 
-// Get the expected ScheduleInRange depending on the current time
-func (r *PipelineScheduleReconciler) GetExpectedScheduleInRange(ctx context.Context, req ctrl.Request, ps *pipelinev1.PipelineSchedule) (*pipelinev1.ScheduleInRange, error) {
+// Get the expected ScheduleInRange depending on the current time, returns nil if no ScheduleRange matches
+func (r *PipelineScheduleReconciler) GetExpectedScheduleInRange(ctx context.Context, ps pipelinev1.PipelineSchedule) (*pipelinev1.ScheduleInRange, error) {
 	log := log.FromContext(ctx)
 
 	if ps.Spec.Schedules != nil && len(ps.Spec.Schedules) != 0 {

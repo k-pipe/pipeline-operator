@@ -5,7 +5,7 @@ import (
 )
 
 /* PipelineStep defines details of a single pipeline step */
-type PipelineStep struct {
+type PipelineStepSpec struct {
 	// +kubebuilder:validation:Required
 	Id string `json:"id"`
 	// enum: START, JOB_STEP, SUB_PIPELINE, BATCHED_SUB_PIPELINE, END
@@ -47,7 +47,7 @@ type PipelineDefinitionSpec struct {
 	// +kubebuilder:validation:Optional
 	PlantUML *string `json:"plantUML"`
 	// +kubebuilder:validation:Required
-	Steps []*PipelineStep `json:"steps"`
+	Steps []*PipelineStepSpec `json:"steps"`
 	// +kubebuilder:validation:Required
 	Pipe []*PipelinePipe `json:"pipes"`
 }
