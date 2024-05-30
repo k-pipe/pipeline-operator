@@ -4,8 +4,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
-
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,28 +20,26 @@ const (
 	PipeLineVersionPatternLabel = "k-pipe.cloud/pipeline-version-pattern"
 )
 
-/*
-create cronjob object according to expected schedule in range corresponding to current time, returns nil if there is
-
-	no matching schedule range
-*/
-func (r *PipelineScheduleReconciler) CronJob(
-	ctx context.Context, req ctrl.Request,
-	schedule *pipelinev1.PipelineSchedule,
-) (*batchv1.CronJob, error) {
-	log := log.FromContext(ctx)
-
-	// get the first matching schedule range
-	scheduleRange, err := r.GetExpectedScheduleInRange(ctx, req, schedule)
+// Get the cronjob of specified name, returns nil if there is none
+func (r *PipelineScheduleReconciler) GetCronJob(ctx context.Context, name types.NamespacedName) (*batchv1.CronJob, error) {
+	res := &batchv1.CronJob{}
+	err := r.Get(ctx, name, res)
 	if err != nil {
-		log.Error(err, "failed to get expected schedule in range corresponding to current time")
-		return nil, err
+		// no result will be returned in case of error
+		res = nil
+		if apierrors.IsNotFound(err) {
+			// not found is not considered an error, we simply return nil,nil in that case
+			err = nil
+		}
 	}
+	return res, err
+}
 
-	// if no schedule range matches, return nil
-	if scheduleRange == nil {
-		return nil, nil
-	}
+/*
+create cronjob object according to provided schedule in range
+*/
+func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, schedule *pipelinev1.PipelineSchedule, sir pipelinev1.ScheduleInRange) error {
+	log := log.FromContext(ctx)
 
 	// the labels to be attached to cron job
 	cjLabels := map[string]string{
@@ -52,7 +48,7 @@ func (r *PipelineScheduleReconciler) CronJob(
 		"app.kubernetes.io/version":    "v1",
 		"app.kubernetes.io/part-of":    "pipeline-operator",
 		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
-		PipeLineVersionPatternLabel:    scheduleRange.VersionPattern,
+		PipeLineVersionPatternLabel:    sir.VersionPattern,
 	}
 	jobLabels := map[string]string{
 		"app.kubernetes.io/name":       "PipelineSchedule",
@@ -69,6 +65,7 @@ func (r *PipelineScheduleReconciler) CronJob(
 		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
 	}
 
+	// define the cronjob object
 	cj := &batchv1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      schedule.Name,
@@ -76,8 +73,8 @@ func (r *PipelineScheduleReconciler) CronJob(
 			Labels:    cjLabels,
 		},
 		Spec: batchv1.CronJobSpec{
-			Schedule:                scheduleRange.CronSpec,
-			TimeZone:                scheduleRange.TimeZone,
+			Schedule:                sir.CronSpec,
+			TimeZone:                sir.TimeZone,
 			StartingDeadlineSeconds: nil,
 			ConcurrencyPolicy:       batchv1.ForbidConcurrent,
 			JobTemplate: batchv1.JobTemplateSpec{
@@ -103,178 +100,78 @@ func (r *PipelineScheduleReconciler) CronJob(
 		},
 	}
 
-	// Set the ownerRef for the Deployment
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
-	if err := ctrl.SetControllerReference(schedule, cj, r.Scheme); err != nil {
-		log.Error(err, "failed to set controller owner reference")
-		return nil, err
-	}
-
-	return cj, nil
-}
-
-func (r *PipelineScheduleReconciler) CronJobIfNotExist(
-	ctx context.Context, req ctrl.Request,
-	schedule *pipelinev1.PipelineSchedule,
-) (bool, error) {
-	log := log.FromContext(ctx)
-
-	cj := &batchv1.CronJob{}
-
-	err := r.Get(ctx, types.NamespacedName{Name: schedule.Name, Namespace: schedule.Namespace}, cj)
-	if err != nil && apierrors.IsNotFound(err) {
-		cj, err := r.CronJob(ctx, req, schedule)
-		if err != nil {
-			log.Error(err, "Failed to define new Cronjob resource for PipelineSchedule")
-
-			err = r.SetPSCondition(
-				ctx, req, schedule, ScheduleAvailable,
-				fmt.Sprintf("Failed to create CronJob for PipelineSchedule (%s): (%s)", schedule.Name, err),
-			)
-			if err != nil {
-				return false, err
-			}
-		}
-
-		log.Info(
-			"Creating a new CronJob",
-			"ConJob.Namespace", cj.Namespace,
-			"CronJob.Name", cj.Name,
-		)
-
-		err = r.Create(ctx, cj)
-		if err != nil {
-			log.Error(
-				err, "Failed to create new CronJob",
-				"CronJob.Namespace", cj.Namespace,
-				"CronJob.Name", cj.Name,
-			)
-
-			return false, err
-		}
-
-		err = r.GetPipelineSchedule(ctx, req, schedule)
-		if err != nil {
-			log.Error(err, "Failed to re-fetch TDSet")
-			return false, err
-		}
-
-		err = r.SetPSCondition(
-			ctx, req, schedule, ScheduleProgressing,
-			fmt.Sprintf("Created Cronjob for the PipelineSchedule: (%s)", schedule.Name),
-		)
-		if err != nil {
-			return false, err
-		}
-
-		return true, nil
-	}
-
-	if err != nil {
-		log.Error(err, "Failed to get CronJob")
-
-		return false, err
-	}
-
-	return false, nil
-}
-
-func (r *PipelineScheduleReconciler) UpdateCronJob(
-	ctx context.Context, req ctrl.Request,
-	schedule *pipelinev1.PipelineSchedule,
-) error {
-	log := log.FromContext(ctx)
-
-	cj := &batchv1.CronJob{}
-
-	err := r.Get(ctx, types.NamespacedName{Name: schedule.Name, Namespace: schedule.Namespace}, cj)
-	if err != nil {
-		log.Error(err, "Failed to get CronJob")
-
-		return err
-	}
-
-	scheduleRange, err := r.GetExpectedScheduleInRange(ctx, req, schedule)
-	if err != nil {
-		log.Error(err, "failed to get expected schedule range")
-
-		return err
-	}
-	// TODO test if no range, then delete cj
-
-	if equalSpecs(scheduleRange, cj) {
-		return nil
-	}
-
+	// create the cronjob
 	log.Info(
-		"Updating a Cronjob specs",
+		"Creating a new Cronjob",
 		"CronJob.Namespace", cj.Namespace,
 		"CronJob.Name", cj.Name,
 	)
-	cj.Spec.TimeZone = scheduleRange.TimeZone
-	cj.Spec.Schedule = scheduleRange.CronSpec
-	cj.ObjectMeta.Labels[PipeLineVersionPatternLabel] = scheduleRange.VersionPattern
-	// TODO add version pattern also in environment
-
-	err = r.Update(ctx, cj)
+	err := r.Create(ctx, cj)
 	if err != nil {
 		log.Error(
-			err, "Failed to update CronJob",
-			"CronJob.Namespace", cj.Namespace,
-			"CronJob.Name", cj.Name,
+			err, "Failed to create new CronJob",
+			"CronJob.Namespace", schedule.Namespace,
+			"CronJob.Name", schedule.Name,
 		)
-
-		err = r.GetPipelineSchedule(ctx, req, schedule)
-		if err != nil {
-			log.Error(err, "Failed to re-fetch TDSet")
-			return err
-		}
-
-		err = r.SetPSCondition(
-			ctx, req, schedule, ScheduleProgressing,
-			fmt.Sprintf("Failed to update CronJob for the PipelineSchedule (%s): (%s)", schedule.Name, err),
-		)
-		if err != nil {
-			return err
-		}
-
-		return nil
 	}
 
-	// TODO should we really always refetch?
-	err = r.GetPipelineSchedule(ctx, req, schedule)
-	if err != nil {
-		log.Error(err, "Failed to re-fetch TDSet")
-		return err
-	}
-
-	err = r.SetPSCondition(
-		ctx, req, schedule, ScheduleProgressing,
-		fmt.Sprintf("Updated CronJob for the PipelineSchedule (%s)", schedule.Name),
-	)
-	if err != nil {
+	// Set the ownerRef for the CronJob
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+	if err := ctrl.SetControllerReference(schedule, cj, r.Scheme); err != nil {
+		log.Error(err, "failed to set controller owner reference")
 		return err
 	}
 
 	return nil
 }
 
-func equalSpecs(scheduleRange *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) bool {
-	if (scheduleRange.TimeZone == nil) != (cj.Spec.TimeZone == nil) {
-		fmt.Printf("Change in timezone existence")
-		return false
+func (r *PipelineScheduleReconciler) DeleteCronJob(
+	ctx context.Context,
+	cj *batchv1.CronJob,
+) error {
+	log := log.FromContext(ctx)
+
+	log.Info(
+		"Deleting the Cronjob",
+		"CronJob.Namespace", cj.Namespace,
+		"CronJob.Name", cj.Name,
+	)
+
+	err := r.Delete(ctx, cj)
+	if err != nil {
+		log.Error(
+			err, "Failed to delete CronJob",
+			"CronJob.Namespace", cj.Namespace,
+			"CronJob.Name", cj.Name,
+		)
 	}
-	if (scheduleRange.TimeZone != nil) && (*scheduleRange.TimeZone != *cj.Spec.TimeZone) {
-		fmt.Printf("Change in timezone value")
-		return false
+	return err
+}
+
+func (r *PipelineScheduleReconciler) UpdateCronJob(
+	ctx context.Context,
+	sir pipelinev1.ScheduleInRange,
+	cj *batchv1.CronJob,
+) error {
+	log := log.FromContext(ctx)
+
+	log.Info(
+		"Updating the Cronjob specs",
+		"CronJob.Namespace", cj.Namespace,
+		"CronJob.Name", cj.Name,
+	)
+	cj.Spec.TimeZone = sir.TimeZone
+	cj.Spec.Schedule = sir.CronSpec
+	cj.ObjectMeta.Labels[PipeLineVersionPatternLabel] = sir.VersionPattern
+	// TODO add version pattern also in environment
+
+	err := r.Update(ctx, cj)
+	if err != nil {
+		log.Error(
+			err, "Failed to update CronJob",
+			"CronJob.Namespace", cj.Namespace,
+			"CronJob.Name", cj.Name,
+		)
 	}
-	if scheduleRange.CronSpec != cj.Spec.Schedule {
-		fmt.Printf("Change in cron spec")
-		return false
-	}
-	if scheduleRange.VersionPattern != cj.ObjectMeta.Labels[PipeLineVersionPatternLabel] {
-		fmt.Printf("Change in cron version pattenr")
-		return false
-	}
-	return true
+	return err
 }

@@ -18,8 +18,8 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	batchv1 "k8s.io/api/batch/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,70 +51,131 @@ type PipelineScheduleReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-
 	log.Info("starting reconciliation (pipelineschedule v2)")
 
-	ps := &pipelinev1.PipelineSchedule{}
-	fmt.Println("=======================================================================")
-	fmt.Println("PipelineSchedule before Get:")
-	fmt.Println(ps)
-	fmt.Println("=======================================================================")
+	// TODO make this configurable!
+	requeue := ctrl.Result{RequeueAfter: time.Minute}
+	noResult := ctrl.Result{}
 
-	// Get the pipeline schedule
-	err := r.GetPipelineSchedule(ctx, req, ps)
+	// get the pipeline schedule by name from request
+	ps, err := r.GetPipelineSchedule(ctx, req.NamespacedName)
+	if ps == nil {
+		// not found, this may happen when a resource is deleted, just end the reconciliation
+		log.Info("PipelineSchedule resource not found. Ignoring since object has been deleted")
+		return requeue, nil
+	}
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("PipelineSchedule resource not found. Ignoring since object must be deleted")
-
-			return ctrl.Result{}, nil
-		}
-
+		// any other error will be logged
 		log.Error(err, "Failed to get PipelineSchedule")
-
-		return ctrl.Result{}, err
+		return noResult, err
 	}
-	fmt.Println("=======================================================================")
-	fmt.Println("PipelineSchedule after Get:")
-	fmt.Println(ps)
-	fmt.Println("=======================================================================")
 
-	// Try to set initial condition status
-	err = r.SetInitialPSCondition(ctx, req, ps)
+	// determine which schedule is expected (this depends on current time)
+	sir, err := r.GetExpectedScheduleInRange(ctx, *ps)
 	if err != nil {
-		log.Error(err, "failed to set initial condition")
-
-		return ctrl.Result{}, err
+		log.Error(err, "failed to determine expected schedule")
+		return noResult, err
 	}
-	fmt.Println("=======================================================================")
-	fmt.Println("PipelineSchedule after SetInitialCondition:")
-	fmt.Println(ps)
-	fmt.Println("=======================================================================")
 
-	// Deployment if not exist
-	ok, err := r.CronJobIfNotExist(ctx, req, ps)
+	// get the cronjob with identical name
+	cj, err := r.GetCronJob(ctx, req.NamespacedName)
 	if err != nil {
-		log.Error(err, "failed to deploy cronjob for PipelineSchedule")
-		return ctrl.Result{}, err
+		log.Error(err, "failed to get cronjob from API")
+		return noResult, err
 	}
 
-	if ok {
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	// if state is consistent with expectation, end conciliation
+	if consistent, message := stateConsistent(sir, cj); consistent {
+		// set "UpdateRequired" to false
+		err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, message)
+		if err != nil {
+			log.Error(err, "failed to clear UpdateRequiredStatus")
+			return noResult, err
+		}
+		// end reconcilition
+		return requeue, nil
+	} else {
+		// set UpdateRequired to true
+		err := r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionTrue, message)
+		if err != nil {
+			log.Error(err, "failed to set UpdateRequiredStatus")
+			return noResult, err
+		}
 	}
 
-	// Update deployment replica if mis matched.
-	err = r.UpdateCronJob(ctx, req, ps)
+	// if no schedule in range, delete cronjob
+	var message string
+	if sir == nil {
+		log.Info("No schedule in current time range expected, deleting CronJob")
+		err := r.DeleteCronJob(ctx, cj)
+		if err != nil {
+			log.Error(err, "failed to delete CronJob")
+			return noResult, err
+		}
+		message = "CronJob has been deleted"
+	} else {
+		// if no cronjob exists, create one
+		if cj == nil {
+			err := r.CreateCronJob(ctx, ps, *sir)
+			if err != nil {
+				log.Error(err, "failed to create CronJob")
+				return noResult, err
+			}
+			message = "CronJob has been created"
+		} else {
+			// update existing cronjob with new schedule in range
+			err := r.UpdateCronJob(ctx, *sir, cj)
+			if err != nil {
+				log.Error(err, "failed to update CronJob")
+				return noResult, err
+			}
+			message = "CronJob has been updated"
+		}
+	}
+
+	// clear UpdateRequired status again
+	err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, message)
 	if err != nil {
-		log.Error(err, "failed to update CronJob for PipelineSchedule")
-
-		return ctrl.Result{}, err
+		log.Error(err, "failed to clear UpdateRequiredStatus")
+		return noResult, err
 	}
 
-	requeueIntervalMinutes := DefaultReconciliationInterval
+	log.Info("done with reconciliation")
+	return requeue, nil
+}
 
-	log.Info("ending reconciliation")
-
-	// TODO this appears to be a bad use of duration, rewrite this!
-	return ctrl.Result{RequeueAfter: time.Duration(time.Minute * time.Duration(requeueIntervalMinutes))}, nil
+// determine if given ScheduleInRange is consistent with CronJob
+func stateConsistent(sir *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) (bool, string) {
+	if (sir == nil) && (cj != nil) {
+		// one is nil, the other isn't --> inconsistent state
+		return false, "CronJob should exist, but doesn't"
+	}
+	if (sir != nil) && (cj == nil) {
+		// one is nil, the other isn't --> inconsistent state
+		return false, "CronJob exists, but shouldn't"
+	}
+	if sir == nil {
+		// both are nil --> consistent state
+		return true, "no CronJob exists - as expected"
+	}
+	// check time zone
+	if (sir.TimeZone == nil) != (cj.Spec.TimeZone == nil) {
+		// one is nil, the other isn't --> inconsistent state
+		return false, "time zone specs existence has changed"
+	}
+	if (sir.TimeZone != nil) && (*sir.TimeZone != *cj.Spec.TimeZone) {
+		// inconsistent timezone strings
+		return false, "time zone value has changed"
+	}
+	if sir.CronSpec != cj.Spec.Schedule {
+		// inconsistent schedule strings
+		return false, "schedule value has changed"
+	}
+	if sir.VersionPattern != cj.ObjectMeta.Labels[PipeLineVersionPatternLabel] {
+		// inconsistent version pattern strings
+		return false, "version pattern has changed"
+	}
+	return true, "CronJob parameters match expectation"
 }
 
 // SetupWithManager sets up the controller with the Manager.
