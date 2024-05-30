@@ -67,12 +67,10 @@ func (r *PipelineScheduleReconciler) SetUpdateRequiredStatus(ctx context.Context
 
 // Get the expected ScheduleInRange depending on the current time, returns nil if no ScheduleRange matches
 func (r *PipelineScheduleReconciler) GetExpectedScheduleInRange(ctx context.Context, ps pipelinev1.PipelineSchedule) (*pipelinev1.ScheduleInRange, error) {
-	log := log.FromContext(ctx)
-
 	if ps.Spec.Schedules != nil && len(ps.Spec.Schedules) != 0 {
 		now := time.Now()
 
-		log.Info("determined current time", "time", now)
+		//log.Info("determined current time", "time", now)
 
 		for _, r := range ps.Spec.Schedules {
 			if isBefore(now, r.Before) && isAfter(now, r.After) {
