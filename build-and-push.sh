@@ -8,6 +8,18 @@ API_VERSION=v1
 REPO=github.com/$GITHUB_USER/$APP_NAME
 KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
 CHART=pipeline
+echo ""
+echo "====================="
+echo "Creating apis        "
+echo "====================="
+echo ""
+APIS=`ls -1 ../source/api`
+for APISOURCE in APIS
+do
+   KIND=`cat $APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
+   echo 'Creating kind $KIND (source: $APISOURCE)'
+done
+exit
 #
 echo ""
 echo "==========================="
@@ -79,7 +91,7 @@ echo "====================="
 echo "Creating apis        "
 echo "====================="
 echo ""
-APIS=`ls -1 source/api`
+APIS=`ls -1 ../source/api`
 for APISOURCE in APIS
 do
    KIND=`cat $APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
