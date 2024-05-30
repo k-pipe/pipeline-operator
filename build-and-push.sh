@@ -8,22 +8,6 @@ API_VERSION=v1
 REPO=github.com/$GITHUB_USER/$APP_NAME
 KUBEBUILDER_PLUGIN=go.kubebuilder.io/v4
 CHART=pipeline
-
-mkdir operator
-cd operator
-APIDIR=../source/api
-echo ""
-echo "====================="
-echo "Creating apis        "
-echo "====================="
-echo ""
-APIS=`ls -1 $APIDIR`
-for APISOURCE in $APIS
-do
-   KIND=`cat $APIDIR/$APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
-   echo "Creating kind $KIND (source: $APISOURCE)"
-done
-exit
 #
 echo ""
 echo "==========================="
@@ -95,19 +79,24 @@ echo "====================="
 echo "Creating apis        "
 echo "====================="
 echo ""
-APIS=`ls -1 ../source/api`
-for APISOURCE in APIS
+APIDIR=../source/api
+echo ""
+echo "====================="
+echo "Creating apis        "
+echo "====================="
+echo ""
+APIS=`ls -1 $APIDIR`
+for APISOURCE in $APIS
 do
-   KIND=`cat $APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
-   echo 'Creating kind $KIND (source: $APISOURCE)'
+   KIND=`cat $APIDIR/$APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
+   echo "Creating kind $KIND (source: $APISOURCE)"
+   operator-sdk create api --group $GROUP --version $API_VERSION --kind $KIND --resource --controller
+   if [ $? != 0 ]
+   then
+     echo Creating API failed
+     exit 1
+   fi
 done
-operator-sdk create api --group $GROUP --version $API_VERSION --kind TDSet --resource --controller
-operator-sdk create api --group $GROUP --version $API_VERSION --kind PipelineSchedule --resource --controller
-if [ $? != 0 ]
-then
-  echo Creating API failed
-  exit 1
-fi
 echo ""
 echo "====================="
 echo "Adding api sources   "
