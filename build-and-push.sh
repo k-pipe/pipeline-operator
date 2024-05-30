@@ -20,7 +20,7 @@ echo ""
 APIS=`ls -1 $APIDIR`
 for APISOURCE in $APIS
 do
-   KIND=`cat `ls -1 $APIDIR/$APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
+   KIND=`cat $APIDIR/$APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
    echo 'Creating kind $KIND (source: $APISOURCE)'
 done
 exit
