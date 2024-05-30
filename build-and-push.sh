@@ -17,7 +17,7 @@ echo "Creating apis        "
 echo "====================="
 echo ""
 APIS=`ls -1 ../source/api`
-for APISOURCE in APIS
+for APISOURCE in $APIS
 do
    KIND=`cat $APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
    echo 'Creating kind $KIND (source: $APISOURCE)'
