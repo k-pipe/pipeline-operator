@@ -86,18 +86,18 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// if state is consistent with expectation, end conciliation
 	consistent, message := stateConsistent(sir, cj)
 	if consistent {
-		// is consistent, set "UpdateRequired" to false
-		if err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, message); err != nil {
-			return r.failed("Failed to clear UpdateRequiredStatus", ps), err
+		// is consistent, set "UpToDate" to true
+		if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, message); err != nil {
+			return r.failed("Failed to set UpToDateStatus", ps), err
 		}
 		// end reconcilition
 		//log.Info("Nothing to reconcile")
 		return requeue, nil
 	} else {
 		log.Info("Reconciliation started (" + message + ")")
-		// set UpdateRequired to true
-		if err := r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionTrue, message); err != nil {
-			return r.failed("Failed to set UpdateRequiredStatus", ps), err
+		// set UpToDate to false
+		if err := r.SetUpToDateStatus(ctx, ps, v1.ConditionFalse, message); err != nil {
+			return r.failed("Failed to clear UpToDateStatus", ps), err
 		}
 	}
 
@@ -133,9 +133,9 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return r.failed("Failed to re-fetch PipelineSchedule", ps), err
 	}
 
-	// clear UpdateRequired status
-	if err = r.SetUpdateRequiredStatus(ctx, ps, v1.ConditionFalse, event); err != nil {
-		return r.failed("Failed to clear UpdateRequiredStatus", ps), err
+	// set UpToDate status
+	if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, event); err != nil {
+		return r.failed("Failed to set UpToDateStatus", ps), err
 	}
 
 	log.Info("Done with reconciliation")

@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	UpdateRequired string = "UpdateRequired"
+	UpToDate string = "UpToDate"
 )
 
 // Gets a pipeline schedule object by name from api server, returns nil,nil if not found
@@ -33,10 +33,10 @@ func (r *PipelineScheduleReconciler) GetPipelineSchedule(ctx context.Context, na
 }
 
 // Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
-func (r *PipelineScheduleReconciler) SetUpdateRequiredStatus(ctx context.Context, ps *pipelinev1.PipelineSchedule, status metav1.ConditionStatus, message string) error {
+func (r *PipelineScheduleReconciler) SetUpToDateStatus(ctx context.Context, ps *pipelinev1.PipelineSchedule, status metav1.ConditionStatus, message string) error {
 	log := log.FromContext(ctx)
 
-	if meta.IsStatusConditionPresentAndEqual(ps.Status.Conditions, UpdateRequired, status) {
+	if meta.IsStatusConditionPresentAndEqual(ps.Status.Conditions, UpToDate, status) {
 		// no change in status
 		return nil
 	}
@@ -45,7 +45,7 @@ func (r *PipelineScheduleReconciler) SetUpdateRequiredStatus(ctx context.Context
 	meta.SetStatusCondition(
 		&ps.Status.Conditions,
 		metav1.Condition{
-			Type:    UpdateRequired,
+			Type:    UpToDate,
 			Status:  status,
 			Reason:  "Reconciling",
 			Message: message,
