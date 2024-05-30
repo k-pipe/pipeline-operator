@@ -25,7 +25,7 @@ type PipelineRunStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:shortName=ps,singular=PipelineRun
+//+kubebuilder:resource:shortName=ps,singular=pipelinerun
 
 // Pipeline is the Schema for the pipelines API
 type PipelineRun struct {
