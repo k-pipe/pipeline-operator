@@ -11,15 +11,16 @@ CHART=pipeline
 
 mkdir operator
 cd operator
+APIDIR=../source/api
 echo ""
 echo "====================="
 echo "Creating apis        "
 echo "====================="
 echo ""
-APIS=`ls -1 ../source/api`
+APIS=`ls -1 $APIDIR`
 for APISOURCE in $APIS
 do
-   KIND=`cat $APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
+   KIND=`cat `ls -1 $APIDIR/$APISOURCE | grep "^type" | tail -2 | head -1 | awk '{print $2}'`
    echo 'Creating kind $KIND (source: $APISOURCE)'
 done
 exit
