@@ -129,6 +129,20 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "PipelineDefinition")
 		os.Exit(1)
 	}
+	if err = (&controller.PipelineJobReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PipelineJob")
+		os.Exit(1)
+	}
+	if err = (&controller.PipelineRunReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PipelineRun")
+		os.Exit(1)
+	}
 	if err = (&controller.PipelineScheduleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

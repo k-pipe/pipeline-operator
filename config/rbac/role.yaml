@@ -45,6 +45,58 @@ rules:
 - apiGroups:
   - pipeline.k-pipe.cloud
   resources:
+  - pipelinejobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelinejobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelinejobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineruns
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineruns/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelineruns/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
   - pipelineschedules
   verbs:
   - create
