@@ -14,3 +14,4 @@ spec:
   schedules:
     - cronSpec: "0 4 * * *"
       versionPattern: "mypattern"
+
