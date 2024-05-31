@@ -1,0 +1,27 @@
+# permissions for end users to view pipelinejobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: pipelinejob-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pipelinejob-viewer-role
+rules:
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelinejobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelinejobs/status
+  verbs:
+  - get

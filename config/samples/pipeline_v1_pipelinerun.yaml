@@ -1,0 +1,12 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineRun
+metadata:
+  labels:
+    app.kubernetes.io/name: pipelinerun
+    app.kubernetes.io/instance: pipelinerun-sample
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: operator
+  name: pipelinerun-sample
+spec:
+  # TODO(user): Add fields here
