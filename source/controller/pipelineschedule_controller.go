@@ -95,6 +95,9 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return requeue, nil
 	} else {
 		log.Info("Reconciliation started (" + message + ")")
+		// copy selected schedule in range data to status (for additionalPrinterColumns), this will be written together with UodateStatus
+		r.SetStatus(ps, sir)
+
 		// set UpToDate to false
 		if err := r.SetUpToDateStatus(ctx, ps, v1.ConditionFalse, message); err != nil {
 			return r.failed("Failed to clear UpToDateStatus", ps), err
