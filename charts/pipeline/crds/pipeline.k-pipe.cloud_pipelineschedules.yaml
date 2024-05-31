@@ -16,7 +16,11 @@ spec:
     singular: pipelineschedule
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.pipelineName
+      name: Pipeline
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: Pipeline is the Schema for the pipelines API
@@ -62,11 +66,6 @@ spec:
                   - versionPattern
                   type: object
                 type: array
-              updateIntervalMinutes:
-                format: int32
-                maximum: 1440
-                minimum: 1
-                type: integer
             required:
             - pipelineName
             - schedules
