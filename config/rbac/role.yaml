@@ -19,6 +19,32 @@ rules:
 - apiGroups:
   - pipeline.k-pipe.cloud
   resources:
+  - pipelinedefinitions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelinedefinitions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
+  - pipelinedefinitions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - pipeline.k-pipe.cloud
+  resources:
   - pipelineschedules
   verbs:
   - create

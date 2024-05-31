@@ -122,11 +122,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.TDSetReconciler{
+	if err = (&controller.PipelineDefinitionReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "TDSet")
+		setupLog.Error(err, "unable to create controller", "controller", "PipelineDefinition")
 		os.Exit(1)
 	}
 	if err = (&controller.PipelineScheduleReconciler{
@@ -134,6 +134,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PipelineSchedule")
+		os.Exit(1)
+	}
+	if err = (&controller.TDSetReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "TDSet")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
