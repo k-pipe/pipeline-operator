@@ -30,7 +30,7 @@ import (
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
-var _ = Describe("TDSet Controller", func() {
+var _ = Describe("PipelineRun Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -40,13 +40,13 @@ var _ = Describe("TDSet Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		tdset := &pipelinev1.TDSet{}
+		pipelinerun := &pipelinev1.PipelineRun{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind TDSet")
-			err := k8sClient.Get(ctx, typeNamespacedName, tdset)
+			By("creating the custom resource for the Kind PipelineRun")
+			err := k8sClient.Get(ctx, typeNamespacedName, pipelinerun)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &pipelinev1.TDSet{
+				resource := &pipelinev1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,16 +59,16 @@ var _ = Describe("TDSet Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &pipelinev1.TDSet{}
+			resource := &pipelinev1.PipelineRun{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance TDSet")
+			By("Cleanup the specific resource instance PipelineRun")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &TDSetReconciler{
+			controllerReconciler := &PipelineRunReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}
