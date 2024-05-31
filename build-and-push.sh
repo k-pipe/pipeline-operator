@@ -80,11 +80,6 @@ echo "Creating apis        "
 echo "====================="
 echo ""
 APIDIR=../source/api
-echo ""
-echo "====================="
-echo "Creating apis        "
-echo "====================="
-echo ""
 APIS=`ls -1 $APIDIR`
 for APISOURCE in $APIS
 do
