@@ -4,5 +4,4 @@ resources:
 - pipeline_v1_pipelinejob.yaml
 - pipeline_v1_pipelinerun.yaml
 - pipeline_v1_pipelineschedule.yaml
-- pipeline_v1_tdset.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
