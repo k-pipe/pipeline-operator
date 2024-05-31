@@ -28,10 +28,6 @@ type PipelineScheduleSpec struct {
 	PipelineName string `json:"pipelineName"`
 	// +kubebuilder:validation:Required
 	Schedules []*ScheduleInRange `json:"schedules"`
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=1440
-	UpdateIntervalMinutes int32 `json:"updateIntervalMinutes"`
 }
 
 // ScheduleStatus defines the observed state of Schedule
@@ -42,6 +38,7 @@ type PipelineScheduleStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=ps,singular=pipelineschedule
+//+kubebuilder:printcolumn:name="Pipeline",type="string",JSONPath=`.spec.pipelineName`
 
 // Pipeline is the Schema for the pipelines API
 type PipelineSchedule struct {
