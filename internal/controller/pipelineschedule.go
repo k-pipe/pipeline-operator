@@ -107,3 +107,19 @@ func isAfter(now time.Time, after *string) bool {
 	}
 	return now.After(t)
 }
+
+func (r *PipelineScheduleReconciler) SetStatus(ps *pipelinev1.PipelineSchedule, sir *pipelinev1.ScheduleInRange) {
+	if sir == nil {
+		ps.Status.VersionPattern = ""
+		ps.Status.CronSpec = ""
+		ps.Status.TimeZone = ""
+	} else {
+		ps.Status.VersionPattern = sir.VersionPattern
+		ps.Status.CronSpec = sir.CronSpec
+		if sir.TimeZone == nil {
+			ps.Status.TimeZone = ""
+		} else {
+			ps.Status.TimeZone = *sir.TimeZone
+		}
+	}
+}

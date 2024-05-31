@@ -32,13 +32,19 @@ type PipelineScheduleSpec struct {
 
 // ScheduleStatus defines the observed state of Schedule
 type PipelineScheduleStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	Conditions     []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	VersionPattern string             `json:"versionPattern"`
+	CronSpec       string             `json:"cronSpec"`
+	TimeZone       string             `json:"timeZone"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=ps,singular=pipelineschedule
 //+kubebuilder:printcolumn:name="Pipeline",type="string",JSONPath=`.spec.pipelineName`
+//+kubebuilder:printcolumn:name="VersionPattern",type="string",JSONPath=`.status.versionPattern`
+//+kubebuilder:printcolumn:name="Schedule",type="string",JSONPath=`.status.cronSpec`
+//+kubebuilder:printcolumn:name="TimeZone",type="string",JSONPath=`.status.timeZone`
 
 // Pipeline is the Schema for the pipelines API
 type PipelineSchedule struct {
