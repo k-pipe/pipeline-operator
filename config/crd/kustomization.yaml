@@ -6,7 +6,6 @@ resources:
 - bases/pipeline.k-pipe.cloud_pipelinejobs.yaml
 - bases/pipeline.k-pipe.cloud_pipelineruns.yaml
 - bases/pipeline.k-pipe.cloud_pipelineschedules.yaml
-- bases/pipeline.k-pipe.cloud_tdsets.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -16,7 +15,6 @@ patches:
 #- path: patches/webhook_in_pipelinejobs.yaml
 #- path: patches/webhook_in_pipelineruns.yaml
 #- path: patches/webhook_in_pipelineschedules.yaml
-#- path: patches/webhook_in_tdsets.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
@@ -25,7 +23,6 @@ patches:
 #- path: patches/cainjection_in_pipelinejobs.yaml
 #- path: patches/cainjection_in_pipelineruns.yaml
 #- path: patches/cainjection_in_pipelineschedules.yaml
-#- path: patches/cainjection_in_tdsets.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # [WEBHOOK] To enable webhook, uncomment the following section
