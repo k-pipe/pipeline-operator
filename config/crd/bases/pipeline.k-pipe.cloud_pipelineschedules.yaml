@@ -20,6 +20,15 @@ spec:
     - jsonPath: .spec.pipelineName
       name: Pipeline
       type: string
+    - jsonPath: .status.versionPattern
+      name: VersionPattern
+      type: string
+    - jsonPath: .status.cronSpec
+      name: Schedule
+      type: string
+    - jsonPath: .status.timeZone
+      name: TimeZone
+      type: string
     name: v1
     schema:
       openAPIV3Schema:
@@ -141,6 +150,16 @@ spec:
                   - type
                   type: object
                 type: array
+              cronSpec:
+                type: string
+              timeZone:
+                type: string
+              versionPattern:
+                type: string
+            required:
+            - cronSpec
+            - timeZone
+            - versionPattern
             type: object
         type: object
     served: true
