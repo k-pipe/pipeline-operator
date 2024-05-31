@@ -5,9 +5,9 @@ metadata:
   name: {{ include "pipeline.controllerRoleName" . }}
 rules:
   - apiGroups:
-      - apps
+      - batch
     resources:
-      - deployments
+      - cronjobs
     verbs:
       - create
       - delete
@@ -20,6 +20,9 @@ rules:
       - pipeline.k-pipe.cloud
     resources:
       - pipelineschedules
+      - pipelinedefinitions
+      - pipelineruns
+      - pipelinejobs
     verbs:
       - create
       - delete
@@ -32,38 +35,18 @@ rules:
       - pipeline.k-pipe.cloud
     resources:
       - pipelineschedules/finalizers
+      - pipelinedefinitions/finalizers
+      - pipelineruns/finalizers
+      - pipelinejobs/finalizers
     verbs:
       - update
   - apiGroups:
       - pipeline.k-pipe.cloud
     resources:
       - pipelineschedules/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - pipeline.k-pipe.cloud
-    resources:
-      - tdsets
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - pipeline.k-pipe.cloud
-    resources:
-      - tdsets/finalizers
-    verbs:
-      - update
-  - apiGroups:
-      - pipeline.k-pipe.cloud
-    resources:
-      - tdsets/status
+      - pipelinedefinitions/status
+      - pipelineruns/status
+      - pipelinejobs/status
     verbs:
       - get
       - patch
