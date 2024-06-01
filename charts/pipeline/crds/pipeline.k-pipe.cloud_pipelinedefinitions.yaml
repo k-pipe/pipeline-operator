@@ -92,8 +92,7 @@ spec:
                       pattern: ^.*$
                       type: string
                     type:
-                      description: 'enum: START, JOB_STEP, SUB_PIPELINE, BATCHED_SUB_PIPELINE,
-                        END'
+                      description: 'enum: INPUT, JOB, PIPELINE, BATCHED, OUTPUT'
                       type: string
                   required:
                   - id

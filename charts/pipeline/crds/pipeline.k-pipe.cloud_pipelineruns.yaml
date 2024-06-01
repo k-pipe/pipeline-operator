@@ -19,7 +19,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: Pipeline is the Schema for the pipelines API
+        description: PipelineRun is the Schema for the pipelines runs
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -46,15 +46,16 @@ spec:
                 type: string
               pipelineName:
                 type: string
-              pipelineVersion:
+              versionPattern:
                 type: string
             required:
             - inputPipes
             - pipelineName
-            - pipelineVersion
+            - versionPattern
             type: object
           status:
-            description: ScheduleStatus defines the observed state of Schedule
+            description: PipelineRunStatus defines the observed state of a pipeline
+              run
             properties:
               conditions:
                 items:
@@ -124,6 +125,22 @@ spec:
                   - type
                   type: object
                 type: array
+              numStepsCreated:
+                type: integer
+              numStepsFailed:
+                type: integer
+              numStepsSucceeded:
+                type: integer
+              numStepsTotal:
+                type: integer
+              pipelineVersion:
+                type: string
+            required:
+            - numStepsCreated
+            - numStepsFailed
+            - numStepsSucceeded
+            - numStepsTotal
+            - pipelineVersion
             type: object
         type: object
     served: true
