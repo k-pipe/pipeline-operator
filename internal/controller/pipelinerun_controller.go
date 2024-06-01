@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"k8s.io/client-go/tools/record"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,7 +31,8 @@ import (
 // PipelineRunReconciler reconciles a PipelineRun object
 type PipelineRunReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=pipeline.k-pipe.cloud,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -47,8 +49,30 @@ type PipelineRunReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
+	log.Info("Starting reconciliation (PipelineRun)")
 
+	// get the pipeline run by name from request
+	pr, err := r.GetPipelineRun(ctx, req.NamespacedName)
+	if pr == nil {
+		// not found, this may happen when a resource is deleted, just end the reconciliation
+		log.Info("PipelineRun resource not found. Ignoring since object has been deleted")
+		return ctrl.Result{}, nil
+	}
+	if err != nil {
+		// any other error will be logged
+		return failed("Failed to get PipelineRun", pr, r.Recorder), err
+	}
+
+	// determine pipeline version if not set yet
+	if pr.Status.pipelineVersion == nil {
+		log.Info("Determining pipeline version")
+		err := r.DeterminePipelineVersion(ctx, pr)
+		if err != nil {
+			// any other error will be logged
+			return failed("Failed to get PipelineRun", pr, r.Recorder), err
+		}
+	}
 	// TODO(user): your logic here
 
 	return ctrl.Result{}, nil
@@ -56,7 +80,9 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("pipeline-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&pipelinev1.PipelineRun{}).
+		Owns(&pipelinev1.PipelineJob{}).
 		Complete(r)
 }
