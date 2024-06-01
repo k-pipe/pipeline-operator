@@ -133,6 +133,74 @@ spec:
                 type: integer
               numStepsTotal:
                 type: integer
+              pipelineStructure:
+                description: PipelineStructure holds the information of steps and
+                  pipes that constitute a pipeline
+                properties:
+                  pipes:
+                    items:
+                      description: PipelinePipe defines details of a pipe connection
+                        between two pipeline steps
+                      properties:
+                        from:
+                          description: PipelineConnector defines step and pipe name
+                            at either end of a pipe
+                          properties:
+                            name:
+                              type: string
+                            stepId:
+                              type: string
+                          required:
+                          - name
+                          - stepId
+                          type: object
+                        to:
+                          description: PipelineConnector defines step and pipe name
+                            at either end of a pipe
+                          properties:
+                            name:
+                              type: string
+                            stepId:
+                              type: string
+                          required:
+                          - name
+                          - stepId
+                          type: object
+                      required:
+                      - from
+                      - to
+                      type: object
+                    type: array
+                  steps:
+                    items:
+                      description: PipelineStep defines details of a single pipeline
+                        step
+                      properties:
+                        description:
+                          type: string
+                        id:
+                          type: string
+                        inputs:
+                          items:
+                            type: string
+                          type: array
+                        specification:
+                          pattern: ^.*$
+                          type: string
+                        type:
+                          description: 'enum: INPUT, JOB, PIPELINE, BATCHED, OUTPUT'
+                          type: string
+                      required:
+                      - id
+                      - inputs
+                      - specification
+                      - type
+                      type: object
+                    type: array
+                required:
+                - pipes
+                - steps
+                type: object
               pipelineVersion:
                 type: string
             required:
@@ -140,6 +208,7 @@ spec:
             - numStepsFailed
             - numStepsSucceeded
             - numStepsTotal
+            - pipelineStructure
             - pipelineVersion
             type: object
         type: object
