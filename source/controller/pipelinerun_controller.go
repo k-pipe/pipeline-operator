@@ -65,7 +65,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// determine pipeline version if not set yet
-	if pr.Status.pipelineVersion == nil {
+	if pr.Status.PipelineVersion == nil {
 		log.Info("Determining pipeline version")
 		err := r.DeterminePipelineVersion(ctx, pr)
 		if err != nil {
