@@ -1,0 +1,33 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineDefinition
+metadata:
+  labels:
+    app.kubernetes.io/name: pipeline-test-1
+    app.kubernetes.io/instance: pipeline-test-1
+    app.kubernetes.io/part-of: kpipe
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kpipe
+  name: pipeline-test-1
+  namespace: k-pipe
+spec:
+  name: "test-pipeline"
+  version: "1.0.0"
+  steps:
+  - id: stepA
+    type: JOB
+    specification: ""
+    inputs: []
+  - id: stepB
+    type: JOB
+    specification: ""
+    inputs: []
+  pipes:
+  - from:
+      stepId: stepA
+      name: pipeName1
+    to:
+      stepId: stepB
+      name: pipeName2
+
+
+
