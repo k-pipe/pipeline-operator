@@ -23,10 +23,10 @@ type PipelineRunStatus struct {
 	Conditions        []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	PipelineVersion   *string            `json:"pipelineVersion"`
 	PipelineStructure *PipelineStructure `json:"pipelineStructure"`
-	numStepsCreated   int                `json:"numStepsCreated"`
-	numStepsSucceeded int                `json:"numStepsSucceeded"`
-	numStepsFailed    int                `json:"numStepsFailed"`
-	numStepsTotal     int                `json:"numStepsTotal"`
+	NumStepsCreated   int                `json:"numStepsCreated"`
+	NumStepsSucceeded int                `json:"numStepsSucceeded"`
+	NumStepsFailed    int                `json:"numStepsFailed"`
+	NumStepsTotal     int                `json:"numStepsTotal"`
 }
 
 //+kubebuilder:object:root=true
