@@ -68,19 +68,19 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if err != nil {
 		// any other error will be logged
-		return r.failed("Failed to get PipelineSchedule", ps), err
+		return failed("Failed to get PipelineSchedule", ps, r.Recorder), err
 	}
 
 	// determine which schedule is expected (this depends on current time)
 	sir, err := r.GetExpectedScheduleInRange(ctx, *ps)
 	if err != nil {
-		return r.failed("Failed to determine expected schedule", ps), err
+		return failed("Failed to determine expected schedule", ps, r.Recorder), err
 	}
 
 	// get the cronjob with identical name
 	cj, err := r.GetCronJob(ctx, req.NamespacedName)
 	if err != nil {
-		return r.failed("Failed to get cronjob from API", ps), err
+		return failed("Failed to get cronjob from API", ps, r.Recorder), err
 	}
 
 	// if state is consistent with expectation, end conciliation
@@ -88,7 +88,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if consistent {
 		// is consistent, set "UpToDate" to true
 		if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, message); err != nil {
-			return r.failed("Failed to set UpToDateStatus", ps), err
+			return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
 		}
 		// end reconcilition
 		//log.Info("Nothing to reconcile")
@@ -100,7 +100,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		// set UpToDate to false
 		if err := r.SetUpToDateStatus(ctx, ps, v1.ConditionFalse, message); err != nil {
-			return r.failed("Failed to clear UpToDateStatus", ps), err
+			return failed("Failed to clear UpToDateStatus", ps, r.Recorder), err
 		}
 	}
 
@@ -109,20 +109,20 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if sir == nil {
 		log.Info("No schedule in current time range expected, deleting CronJob")
 		if err := r.DeleteCronJob(ctx, cj); err != nil {
-			return r.failed("Failed to delete CronJob", ps), err
+			return failed("Failed to delete CronJob", ps, r.Recorder), err
 		}
 		event = "CronJob has been deleted"
 	} else {
 		// if no cronjob exists, create one
 		if cj == nil {
 			if err := r.CreateCronJob(ctx, ps, *sir); err != nil {
-				return r.failed("Failed to create CronJob", ps), err
+				return failed("Failed to create CronJob", ps, r.Recorder), err
 			}
 			event = "CronJob has been created"
 		} else {
 			// update existing cronjob with new schedule in range
 			if err := r.UpdateCronJob(ctx, *sir, cj); err != nil {
-				return r.failed("Failed to update CronJob", ps), err
+				return failed("Failed to update CronJob", ps, r.Recorder), err
 			}
 			event = "CronJob has been updated"
 		}
@@ -133,21 +133,16 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// refetch the pipeline schedule object
 	if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
-		return r.failed("Failed to re-fetch PipelineSchedule", ps), err
+		return failed("Failed to re-fetch PipelineSchedule", ps, r.Recorder), err
 	}
 
 	// set UpToDate status
 	if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, event); err != nil {
-		return r.failed("Failed to set UpToDateStatus", ps), err
+		return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
 	}
 
 	log.Info("Done with reconciliation")
 	return requeue, nil
-}
-
-func (r *PipelineScheduleReconciler) failed(errormessage string, ps *pipelinev1.PipelineSchedule) ctrl.Result {
-	r.Recorder.Event(ps, "Warning", "ReconciliationError", errormessage)
-	return ctrl.Result{}
 }
 
 // determine if given ScheduleInRange is consistent with CronJob

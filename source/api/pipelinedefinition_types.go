@@ -36,7 +36,15 @@ type PipeConnector struct {
 	Name string `json:"name"`
 }
 
-/* ScheduleSpec defines the desired state of Schedule */
+/* PipelineStructure holds the information of steps and pipes that constitute a pipeline */
+type PipelineStructure struct {
+	// +kubebuilder:validation:Required
+	Steps []*PipelineStepSpec `json:"steps"`
+	// +kubebuilder:validation:Required
+	Pipe []*PipelinePipe `json:"pipes"`
+}
+
+/* PipelineDefinitionSpec holds the definition of the pipeline structure, the configuration of steps, and meta information */
 type PipelineDefinitionSpec struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
@@ -47,9 +55,9 @@ type PipelineDefinitionSpec struct {
 	// +kubebuilder:validation:Optional
 	PlantUML *string `json:"plantUML"`
 	// +kubebuilder:validation:Required
-	Steps []*PipelineStepSpec `json:"steps"`
+	PipelineStructure PipelineStructure `json:"pipelineStructure"`
 	// +kubebuilder:validation:Required
-	Pipe []*PipelinePipe `json:"pipes"`
+	StepConfiguration map[string]string `json:"configuration"`
 }
 
 // ScheduleStatus defines the observed state of Schedule
