@@ -9,7 +9,7 @@ type PipelineRunSpec struct {
 	// +kubebuilder:validation:Required
 	PipelineName string `json:"pipelineName"`
 	// +kubebuilder:validation:Required
-	PipelineVersion string `json:"pipelineVersion"`
+	VersionPattern string `json:"versionPattern"`
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description"`
 	// +kubebuilder:validation:Optional
@@ -18,16 +18,21 @@ type PipelineRunSpec struct {
 	InputPipes []*string `json:"inputPipes"`
 }
 
-// ScheduleStatus defines the observed state of Schedule
+// PipelineRunStatus defines the observed state of a pipeline run
 type PipelineRunStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	Conditions        []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	PipelineVersion   string             `json:"pipelineVersion"`
+	numStepsCreated   int                `json:"numStepsCreated"`
+	numStepsSucceeded int                `json:"numStepsSucceeded"`
+	numStepsFailed    int                `json:"numStepsFailed"`
+	numStepsTotal     int                `json:"numStepsTotal"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=pr,singular=pipelinerun
 
-// Pipeline is the Schema for the pipelines API
+// PipelineRun is the Schema for the pipelines runs
 type PipelineRun struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -38,7 +43,7 @@ type PipelineRun struct {
 
 //+kubebuilder:object:root=true
 
-// PipelineList contains a list of Pipeline
+// PipelineRunList contains a list of PipelineRuns
 type PipelineRunList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

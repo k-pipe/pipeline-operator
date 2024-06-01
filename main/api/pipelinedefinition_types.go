@@ -8,7 +8,7 @@ import (
 type PipelineStepSpec struct {
 	// +kubebuilder:validation:Required
 	Id string `json:"id"`
-	// enum: START, JOB_STEP, SUB_PIPELINE, BATCHED_SUB_PIPELINE, END
+	// enum: INPUT, JOB, PIPELINE, BATCHED, OUTPUT
 	// +kubebuilder:validation:Required
 	Type string `json:"type"`
 	// +kubebuilder:validation:Optional

@@ -1,0 +1,15 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineRun
+metadata:
+  labels:
+    app.kubernetes.io/name: run-test-1
+    app.kubernetes.io/instance: run-test-1
+    app.kubernetes.io/part-of: kpipe
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kpipe
+  name: run-test-1
+  namespace: k-pipe
+spec:
+  pipelineName: "test-pipeline"
+  pipelineVersion: "1.0.0"
+  inputPipes: []
