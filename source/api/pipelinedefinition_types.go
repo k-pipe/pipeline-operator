@@ -2,7 +2,6 @@ package v1
 
 import (
 	"encoding/json"
-	v1 "github.com/k-pipe/pipeline-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,7 +16,7 @@ type PipelineJobStepSpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Config json.RawMessage `json:"config,omitempty"`
 	// +kubebuilder:validation:Required
-	JobSpec v1.JobSpec `json:"jobSpec"`
+	JobSpec JobSpec `json:"jobSpec"`
 }
 
 /* SubPipelineSpec defines details of a pipeline step that will run as a sub-pipeline */
