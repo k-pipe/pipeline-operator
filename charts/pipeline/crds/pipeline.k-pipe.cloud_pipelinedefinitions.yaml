@@ -109,9 +109,6 @@ spec:
                       - type
                       type: object
                     type: array
-                required:
-                - pipes
-                - steps
                 type: object
               plantUML:
                 type: string
