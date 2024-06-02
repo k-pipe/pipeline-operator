@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -8,16 +9,16 @@ import (
 type JobSpec struct {
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Specification json.RawMessage `json:"specification,omitempty"`
 }
 
 /* PipelineJobSpec defines the specs of a PipelineStep */
 type PipelineJobSpec struct {
 	// +kubebuilder:validation:Required
-	PipelineName string `json:"pipelineName"`
-	// +kubebuilder:validation:Required
-	PipelineVersion string `json:"pipelineVersion"`
-	// +kubebuilder:validation:Required
-	PipelineRun string `json:"pipelineRun"`
+	Id string `json:"id"`
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description"`
 	// +kubebuilder:validation:Required
