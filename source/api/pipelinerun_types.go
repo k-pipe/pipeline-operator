@@ -25,15 +25,23 @@ type PipelineRunStatus struct {
 	PipelineVersion *string `json:"pipelineVersion"`
 	// +kubebuilder:validation:Optional
 	PipelineStructure *PipelineStructure `json:"pipelineStructure"`
-	NumStepsCreated   int                `json:"numStepsCreated"`
+	NumStepsActive    int                `json:"numStepsActive"`
 	NumStepsSucceeded int                `json:"numStepsSucceeded"`
 	NumStepsFailed    int                `json:"numStepsFailed"`
 	NumStepsTotal     int                `json:"numStepsTotal"`
+	State             *string            `json:"state"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=pr,singular=pipelinerun
+//+kubebuilder:printcolumn:name="Pipeline",type="string",JSONPath=`.spec.pipelineName`
+//+kubebuilder:printcolumn:name="Version",type="string",JSONPath=`.status.pipelineVersion`
+//+kubebuilder:printcolumn:name="Active",type="int",JSONPath=`.status.numStepsActive`
+//+kubebuilder:printcolumn:name="Success",type="int",JSONPath=`.status.numStepsSucceeded`
+//+kubebuilder:printcolumn:name="Failed",type="int",JSONPath=`.status.numStepsFailed`
+//+kubebuilder:printcolumn:name="Total",type="int",JSONPath=`.status.numStepsTotal`
+//+kubebuilder:printcolumn:name="State",type="string",JSONPath=`.status.state`
 
 // PipelineRun is the Schema for the pipelines runs
 type PipelineRun struct {
