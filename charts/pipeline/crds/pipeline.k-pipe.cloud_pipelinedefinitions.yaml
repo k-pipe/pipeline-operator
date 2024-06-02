@@ -97,15 +97,13 @@ spec:
                             type: string
                           type: array
                         specification:
-                          pattern: ^.*$
-                          type: string
+                          x-kubernetes-preserve-unknown-fields: true
                         type:
                           description: 'enum: INPUT, JOB, PIPELINE, BATCHED, OUTPUT'
                           type: string
                       required:
                       - id
                       - inputs
-                      - specification
                       - type
                       type: object
                     type: array
