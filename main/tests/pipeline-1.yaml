@@ -16,7 +16,12 @@ spec:
     steps:
     - id: stepA
       type: JOB
-      specification: ""
+      specification:
+        list:
+          - 1
+          - 2
+          - 3
+        string: "hello"
       inputs: []
     - id: stepB
       type: JOB

@@ -14,6 +14,9 @@ import (
 
 const (
 	ConfigMapCreated string = "ConfigMapCreated"
+
+	// Step Types
+	STEP_TYPE_JOB = "JOB"
 )
 
 // Gets a pipeline schedule object by name from api server, returns nil,nil if not found

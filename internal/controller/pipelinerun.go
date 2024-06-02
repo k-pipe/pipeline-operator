@@ -12,10 +12,13 @@ import (
 )
 
 const (
-	RunFailed         string = "RunFailed"
-	RunSucceeded      string = "RunSucceeded"
+	// status flags
 	VersionDetermined string = "VersionDetermined"
 	StructureLoaded   string = "StructureLoaded"
+	Paused            string = "Paused"
+	Terminated        string = "Terminated"
+	Failed            string = "Failed"
+	Succeeded         string = "Succeeded"
 )
 
 // Gets a pipeline schedule object by name from api server, returns nil,nil if not found
