@@ -25,16 +25,16 @@ spec:
       type: string
     - jsonPath: .status.numStepsActive
       name: Active
-      type: int
+      type: integer
     - jsonPath: .status.numStepsSucceeded
       name: Success
-      type: int
+      type: integer
     - jsonPath: .status.numStepsFailed
       name: Failed
-      type: int
+      type: integer
     - jsonPath: .status.numStepsTotal
       name: Total
-      type: int
+      type: integer
     - jsonPath: .status.state
       name: State
       type: string
