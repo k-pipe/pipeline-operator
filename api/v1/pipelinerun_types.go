@@ -20,8 +20,10 @@ type PipelineRunSpec struct {
 
 // PipelineRunStatus defines the observed state of a pipeline run
 type PipelineRunStatus struct {
-	Conditions        []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-	PipelineVersion   *string            `json:"pipelineVersion"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	// +kubebuilder:validation:Optional
+	PipelineVersion *string `json:"pipelineVersion"`
+	// +kubebuilder:validation:Optional
 	PipelineStructure *PipelineStructure `json:"pipelineStructure"`
 	NumStepsCreated   int                `json:"numStepsCreated"`
 	NumStepsSucceeded int                `json:"numStepsSucceeded"`
