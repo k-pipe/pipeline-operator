@@ -21,7 +21,6 @@ limitations under the License.
 package v1
 
 import (
-	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -561,11 +560,6 @@ func (in *PipelineStepSpec) DeepCopyInto(out *PipelineStepSpec) {
 		in, out := &in.Description, &out.Description
 		*out = new(string)
 		**out = **in
-	}
-	if in.Specification != nil {
-		in, out := &in.Specification, &out.Specification
-		*out = make(json.RawMessage, len(*in))
-		copy(*out, *in)
 	}
 	if in.Inputs != nil {
 		in, out := &in.Inputs, &out.Inputs

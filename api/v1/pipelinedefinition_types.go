@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,7 +16,7 @@ type PipelineStepSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
-	Specification json.RawMessage `json:"specification,omitempty"`
+	Specification string `json:"specification,omitempty"`
 	// +kubebuilder:validation:Required
 	Inputs []string `json:"inputs"`
 }
