@@ -16,7 +16,29 @@ spec:
     singular: pipelinerun
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.pipelineName
+      name: Pipeline
+      type: string
+    - jsonPath: .status.pipelineVersion
+      name: Version
+      type: string
+    - jsonPath: .status.numStepsActive
+      name: Active
+      type: int
+    - jsonPath: .status.numStepsSucceeded
+      name: Success
+      type: int
+    - jsonPath: .status.numStepsFailed
+      name: Failed
+      type: int
+    - jsonPath: .status.numStepsTotal
+      name: Total
+      type: int
+    - jsonPath: .status.state
+      name: State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: PipelineRun is the Schema for the pipelines runs
@@ -125,7 +147,7 @@ spec:
                   - type
                   type: object
                 type: array
-              numStepsCreated:
+              numStepsActive:
                 type: integer
               numStepsFailed:
                 type: integer
@@ -200,11 +222,14 @@ spec:
                 type: object
               pipelineVersion:
                 type: string
+              state:
+                type: string
             required:
-            - numStepsCreated
+            - numStepsActive
             - numStepsFailed
             - numStepsSucceeded
             - numStepsTotal
+            - state
             type: object
         type: object
     served: true
