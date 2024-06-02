@@ -205,8 +205,6 @@ spec:
             - numStepsFailed
             - numStepsSucceeded
             - numStepsTotal
-            - pipelineStructure
-            - pipelineVersion
             type: object
         type: object
     served: true
