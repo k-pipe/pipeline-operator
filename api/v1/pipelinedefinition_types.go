@@ -1,24 +1,38 @@
 package v1
 
 import (
+	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-/* PipelineStep defines details of a single pipeline step */
-type PipelineStepSpec struct {
+/* PipelineJobStepSpec defines details of a pipeline step that will run as a job */
+type PipelineJobStepSpec struct {
 	// +kubebuilder:validation:Required
 	Id string `json:"id"`
-	// enum: INPUT, JOB, PIPELINE, BATCHED, OUTPUT
-	// +kubebuilder:validation:Required
-	Type string `json:"type"`
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description"`
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
-	Specification string `json:"specification,omitempty"`
+	Config json.RawMessage `json:"config,omitempty"`
 	// +kubebuilder:validation:Required
-	Inputs []string `json:"inputs"`
+	JobSpec JobSpec `json:"jobSpec"`
+}
+
+/* SubPipelineSpec defines details of a pipeline step that will run as a sub-pipeline */
+type SubPipelineSpec struct {
+	// +kubebuilder:validation:Required
+	Id string `json:"id"`
+	// +kubebuilder:validation:Optional
+	Description *string `json:"description"`
+	// +kubebuilder:validation:Optional
+	Namespace string `json:"namespace"`
+	// +kubebuilder:validation:Required
+	PipelineName string `json:"pipelineName"`
+	// +kubebuilder:validation:Required
+	VersionPattern string `json:"versionPattern"`
+	// +kubebuilder:validation:Optional
+	Batched *bool `json:"batched"`
 }
 
 /* PipelinePipe defines details of a pipe connection between two pipeline steps */
@@ -40,7 +54,9 @@ type PipeConnector struct {
 /* PipelineStructure holds the information of steps and pipes that constitute a pipeline */
 type PipelineStructure struct {
 	// +kubebuilder:validation:Required
-	Steps []*PipelineStepSpec `json:"steps,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	JobSteps []*PipelineJobStepSpec `json:"jobSteps,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	// +kubebuilder:validation:Required
+	SubPipelines []*SubPipelineSpec `json:"subPipelines,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	// +kubebuilder:validation:Required
 	Pipes []*PipelinePipe `json:"pipes,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }

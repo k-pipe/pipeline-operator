@@ -96,7 +96,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return failed("No such pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
 		}
 		pr.Status.PipelineStructure = &pd.Spec.PipelineStructure
-		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d pipes", len(pr.Status.PipelineStructure.Steps), len(pr.Status.PipelineStructure.Pipes))
+		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d sub-pipelines, %d pipes", len(pr.Status.PipelineStructure.JobSteps), len(pr.Status.PipelineStructure.SubPipelines), len(pr.Status.PipelineStructure.Pipes))
 		state := StructureLoaded
 		pr.Status.State = &state
 		if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, message); err != nil {
@@ -132,10 +132,10 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 // find all job steps that are startable (i.e. not active yet and all input steps have succeeded)
-func findStartableSteps(pr *pipelinev1.PipelineRun) []*pipelinev1.PipelineStepSpec {
-	var res []*pipelinev1.PipelineStepSpec
-	for _, step := range pr.Status.PipelineStructure.Steps {
-		if !isActive(pr, step.Id) && (step.Type == STEP_TYPE_JOB) {
+func findStartableSteps(pr *pipelinev1.PipelineRun) []*pipelinev1.PipelineJobStepSpec {
+	var res []*pipelinev1.PipelineJobStepSpec
+	for _, step := range pr.Status.PipelineStructure.JobSteps {
+		if !isActive(pr, step.Id) {
 			if allInputsSucceeded(pr, step.Id) {
 				res = append(res, step)
 			}
@@ -154,12 +154,12 @@ func allInputsSucceeded(pr *pipelinev1.PipelineRun, step string) bool {
 	return true
 }
 
-func startStep(ctx context.Context, pr *pipelinev1.PipelineRun, step *pipelinev1.PipelineStepSpec) error {
+func startStep(ctx context.Context, pr *pipelinev1.PipelineRun, step *pipelinev1.PipelineJobStepSpec) error {
 	//var j interface{}
 	//err := json.Unmarshal(step.Specification, &j)
 	//fmt.Println(err)
 	// TODO
-	fmt.Println(step.Specification)
+	//fmt.Println(step.Specification)
 
 	return nil
 }
