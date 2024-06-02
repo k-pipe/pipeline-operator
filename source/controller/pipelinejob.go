@@ -66,7 +66,7 @@ func (r *PipelineJobReconciler) SetPipelineJobStatus(ctx context.Context, pr *pi
 /*
 create PipelineJob provided spec
 */
-func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipelinev1.PipelineRun, spec *pipelinev1.PipelineStepSpec) error {
+func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipelinev1.PipelineRun, spec *pipelinev1.PipelineJobStepSpec) error {
 	//log := log.FromContext(ctx)
 
 	// the labels to be attached to cron job
