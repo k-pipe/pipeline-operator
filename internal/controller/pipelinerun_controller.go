@@ -18,6 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,9 +73,32 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		err := r.DeterminePipelineVersion(ctx, pr)
 		if err != nil {
 			// any other error will be logged
-			return failed("Failed to get PipelineRun", pr, r.Recorder), err
+			return failed("Failed to determine which pipeline version to run", pr, r.Recorder), err
 		}
+		if err = r.SetPipelineRunStatus(ctx, pr, VersionDetermined, v1.ConditionTrue, "Pipeline version used for run: "+*pr.Status.PipelineVersion); err != nil {
+			return failed("Failed to set PipelineRun status", pr, r.Recorder), err
+		}
+		r.Recorder.Event(pr, "Normal", "Reconciliation", "Pipeline version determined: "+*pr.Status.PipelineVersion)
 	}
+
+	// load pipeline structure if not set yet
+	if pr.Status.PipelineStructure == nil {
+		pipelineDefinition := pr.Spec.PipelineName + "-" + *pr.Status.PipelineVersion
+		pd, err := GetPipelineDefinition(r, ctx, types.NamespacedName{Name: pipelineDefinition, Namespace: pr.Namespace})
+		if err != nil {
+			return failed("Failed to load pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
+		}
+		if pd == nil {
+			return failed("No such pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
+		}
+		pr.Status.PipelineStructure = &pd.Spec.PipelineStructure
+		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d pipes", len(pr.Status.PipelineStructure.Steps), len(pr.Status.PipelineStructure.Pipes))
+		if err = r.SetPipelineRunStatus(ctx, pr, StructureLoaded, v1.ConditionTrue, message); err != nil {
+			return failed("Failed to set PipelineRun status", pr, r.Recorder), err
+		}
+		r.Recorder.Event(pr, "Normal", "Reconciliation", message)
+	}
+
 	// TODO(user): your logic here
 
 	return ctrl.Result{}, nil

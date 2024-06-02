@@ -4,6 +4,7 @@ import (
 	"context"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
@@ -12,15 +13,12 @@ import (
 )
 
 const (
-	RunFailed         string = "RunFailed"
-	RunSucceeded      string = "RunSucceeded"
-	VersionDetermined string = "VersionDetermined"
-	StructureLoaded   string = "StructureLoaded"
+	ConfigMapCreated string = "ConfigMapCreated"
 )
 
 // Gets a pipeline schedule object by name from api server, returns nil,nil if not found
-func (r *PipelineRunReconciler) GetPipelineRun(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineRun, error) {
-	res := &pipelinev1.PipelineRun{}
+func GetPipelineDefinition(r client.Reader, ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineDefinition, error) {
+	res := &pipelinev1.PipelineDefinition{}
 	err := r.Get(ctx, name, res)
 	if err != nil {
 		// no result will be returned in case of error
@@ -34,26 +32,26 @@ func (r *PipelineRunReconciler) GetPipelineRun(ctx context.Context, name types.N
 }
 
 // Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
-func (r *PipelineRunReconciler) SetPipelineRunStatus(ctx context.Context, pr *pipelinev1.PipelineRun, statusType string, status metav1.ConditionStatus, message string) error {
+func (r *PipelineDefinitionReconciler) SetPipelineDefinitionStatus(ctx context.Context, pd *pipelinev1.PipelineDefinition, status metav1.ConditionStatus, message string) error {
 	log := log.FromContext(ctx)
 
-	if meta.IsStatusConditionPresentAndEqual(pr.Status.Conditions, statusType, status) {
+	if meta.IsStatusConditionPresentAndEqual(pd.Status.Conditions, ConfigMapCreated, status) {
 		// no change in status
 		return nil
 	}
 
 	// set the status condition
 	meta.SetStatusCondition(
-		&pr.Status.Conditions,
+		&pd.Status.Conditions,
 		metav1.Condition{
-			Type:    statusType,
+			Type:    ConfigMapCreated,
 			Status:  status,
 			Reason:  "Reconciling",
 			Message: message,
 		},
 	)
 
-	if err := r.Status().Update(ctx, pr); err != nil {
+	if err := r.Status().Update(ctx, pd); err != nil {
 		log.Error(err, "Failed to update PipelineRun status")
 		return err
 	}
@@ -63,12 +61,5 @@ func (r *PipelineRunReconciler) SetPipelineRunStatus(ctx context.Context, pr *pi
 	//	return err
 	//}
 
-	return nil
-}
-
-func (r *PipelineRunReconciler) DeterminePipelineVersion(ctx context.Context, pr *pipelinev1.PipelineRun) error {
-	version := "1.0.0"
-	pr.Status.PipelineVersion = &version
-	// TODO
 	return nil
 }

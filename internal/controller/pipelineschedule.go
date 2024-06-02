@@ -57,10 +57,11 @@ func (r *PipelineScheduleReconciler) SetUpToDateStatus(ctx context.Context, ps *
 		return err
 	}
 
-	if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
-		log.Error(err, "Failed to re-fetch PipelineSchedule")
-		return err
-	}
+	// refetch should not be needed, in fact can be problematic...
+	//if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
+	//	log.Error(err, "Failed to re-fetch PipelineSchedule")
+	//	return err
+	//}
 
 	return nil
 }
