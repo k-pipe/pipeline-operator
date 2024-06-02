@@ -12,22 +12,25 @@ metadata:
 spec:
   name: "test-pipeline"
   version: "1.0.0"
-  steps:
-  - id: stepA
-    type: JOB
-    specification: ""
-    inputs: []
-  - id: stepB
-    type: JOB
-    specification: ""
-    inputs: []
-  pipes:
-  - from:
-      stepId: stepA
-      name: pipeName1
-    to:
-      stepId: stepB
-      name: pipeName2
-
+  pipelineStructure:
+    steps:
+    - id: stepA
+      type: JOB
+      specification: ""
+      inputs: []
+    - id: stepB
+      type: JOB
+      specification: ""
+      inputs: []
+    pipes:
+    - from:
+        stepId: stepA
+        name: pipeName1
+      to:
+        stepId: stepB
+        name: pipeName2
+  configuration:
+    stepA: ABC
+    stepB: EFG
 
 
