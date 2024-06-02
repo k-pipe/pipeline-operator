@@ -39,9 +39,9 @@ type PipeConnector struct {
 /* PipelineStructure holds the information of steps and pipes that constitute a pipeline */
 type PipelineStructure struct {
 	// +kubebuilder:validation:Required
-	Steps []*PipelineStepSpec `json:"steps"`
+	Steps []*PipelineStepSpec `json:"steps,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	// +kubebuilder:validation:Required
-	Pipe []*PipelinePipe `json:"pipes"`
+	Pipes []*PipelinePipe `json:"pipes,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 /* PipelineDefinitionSpec holds the definition of the pipeline structure, the configuration of steps, and meta information */

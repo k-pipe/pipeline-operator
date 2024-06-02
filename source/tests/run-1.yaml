@@ -11,5 +11,5 @@ metadata:
   namespace: k-pipe
 spec:
   pipelineName: "test-pipeline"
-  pipelineVersion: "1.0.0"
+  versionPattern: "1.0.0"
   inputPipes: []

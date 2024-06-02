@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/part-of: kpipe
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kpipe
-  name: pipeline-test-1
+  name: test-pipeline-1.0.0
   namespace: k-pipe
 spec:
   name: "test-pipeline"
