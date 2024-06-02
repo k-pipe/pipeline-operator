@@ -19,9 +19,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,22 +69,24 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return failed("Failed to get PipelineRun", pr, r.Recorder), err
 	}
 
-	// determine pipeline version if not set yet
-	if pr.Status.PipelineVersion == nil {
+	// determine pipeline version if not set, yet
+	if (pr.Status.PipelineVersion == nil) || !isTrue(pr, VersionDetermined) {
 		log.Info("Determining pipeline version")
 		err := r.DeterminePipelineVersion(ctx, pr)
 		if err != nil {
 			// any other error will be logged
 			return failed("Failed to determine which pipeline version to run", pr, r.Recorder), err
 		}
-		if err = r.SetPipelineRunStatus(ctx, pr, VersionDetermined, v1.ConditionTrue, "Pipeline version used for run: "+*pr.Status.PipelineVersion); err != nil {
+		state := VersionDetermined
+		pr.Status.State = &state
+		if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, "Pipeline version used for run: "+*pr.Status.PipelineVersion); err != nil {
 			return failed("Failed to set PipelineRun status", pr, r.Recorder), err
 		}
 		r.Recorder.Event(pr, "Normal", "Reconciliation", "Pipeline version determined: "+*pr.Status.PipelineVersion)
 	}
 
-	// load pipeline structure if not set yet
-	if pr.Status.PipelineStructure == nil {
+	// load pipeline structure if not set, yet
+	if (pr.Status.PipelineStructure == nil) || !isTrue(pr, StructureLoaded) {
 		pipelineDefinition := pr.Spec.PipelineName + "-" + *pr.Status.PipelineVersion
 		pd, err := GetPipelineDefinition(r, ctx, types.NamespacedName{Name: pipelineDefinition, Namespace: pr.Namespace})
 		if err != nil {
@@ -93,15 +97,87 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 		pr.Status.PipelineStructure = &pd.Spec.PipelineStructure
 		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d pipes", len(pr.Status.PipelineStructure.Steps), len(pr.Status.PipelineStructure.Pipes))
-		if err = r.SetPipelineRunStatus(ctx, pr, StructureLoaded, v1.ConditionTrue, message); err != nil {
+		state := StructureLoaded
+		pr.Status.State = &state
+		if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, message); err != nil {
 			return failed("Failed to set PipelineRun status", pr, r.Recorder), err
 		}
 		r.Recorder.Event(pr, "Normal", "Reconciliation", message)
 	}
 
-	// TODO(user): your logic here
+	// if not paused nor terminated ...
+	if !(isTrue(pr, Paused) || isTrue(pr, Terminated)) {
+		log.Info("Updating job states")
+		//  updade running step state
+		// TODO
+
+		// find steps that can be started
+		startable := findStartableSteps(pr)
+		if len(startable) > 0 {
+			var ids []string
+			for _, s := range startable {
+				ids = append(ids, s.Id)
+			}
+			log.Info(fmt.Sprintf("%d steps are startable", len(startable)), "startable", strings.Join(ids, ","))
+			for _, step := range findStartableSteps(pr) {
+				log.Info("Starting step: " + step.Id)
+				if err := startStep(ctx, pr, step); err != nil {
+					return failed("Failed to create job for step: "+step.Id, pr, r.Recorder), err
+				}
+			}
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+
+// find all job steps that are startable (i.e. not active yet and all input steps have succeeded)
+func findStartableSteps(pr *pipelinev1.PipelineRun) []*pipelinev1.PipelineStepSpec {
+	var res []*pipelinev1.PipelineStepSpec
+	for _, step := range pr.Status.PipelineStructure.Steps {
+		if !isActive(pr, step.Id) && (step.Type == STEP_TYPE_JOB) {
+			if allInputsSucceeded(pr, step.Id) {
+				res = append(res, step)
+			}
+		}
+	}
+	return res
+}
+
+// check all input steps (those at the other end of a pipe that has the given step as target), whether they succeeded
+func allInputsSucceeded(pr *pipelinev1.PipelineRun, step string) bool {
+	for _, pipe := range pr.Status.PipelineStructure.Pipes {
+		if (pipe.To.StepId == step) && !hasSucceeded(pr, pipe.From.StepId) {
+			return false
+		}
+	}
+	return true
+}
+
+func startStep(ctx context.Context, pr *pipelinev1.PipelineRun, step *pipelinev1.PipelineStepSpec) error {
+	//var j interface{}
+	//err := json.Unmarshal(step.Specification, &j)
+	//fmt.Println(err)
+	// TODO
+	fmt.Println(step.Specification)
+
+	return nil
+}
+
+func isTrue(pr *pipelinev1.PipelineRun, condition string) bool {
+	return meta.IsStatusConditionPresentAndEqual(pr.Status.Conditions, condition, v1.ConditionTrue)
+}
+
+func isActive(pr *pipelinev1.PipelineRun, stepId string) bool {
+	return meta.FindStatusCondition(pr.Status.Conditions, stepStatus(stepId)) != nil
+}
+
+func hasSucceeded(pr *pipelinev1.PipelineRun, stepId string) bool {
+	return isTrue(pr, stepStatus(stepId))
+}
+
+func stepStatus(stepId string) string {
+	return "success-" + stepId
 }
 
 // SetupWithManager sets up the controller with the Manager.
