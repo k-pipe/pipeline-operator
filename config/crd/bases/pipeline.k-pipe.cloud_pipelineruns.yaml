@@ -197,9 +197,6 @@ spec:
                       - type
                       type: object
                     type: array
-                required:
-                - pipes
-                - steps
                 type: object
               pipelineVersion:
                 type: string

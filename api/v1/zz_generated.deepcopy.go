@@ -587,8 +587,8 @@ func (in *PipelineStructure) DeepCopyInto(out *PipelineStructure) {
 			}
 		}
 	}
-	if in.Pipe != nil {
-		in, out := &in.Pipe, &out.Pipe
+	if in.Pipes != nil {
+		in, out := &in.Pipes, &out.Pipes
 		*out = make([]*PipelinePipe, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
