@@ -38,6 +38,8 @@ spec:
             properties:
               description:
                 type: string
+              id:
+                type: string
               inputPipes:
                 items:
                   type: string
@@ -48,6 +50,8 @@ spec:
                 properties:
                   image:
                     type: string
+                  specification:
+                    x-kubernetes-preserve-unknown-fields: true
                 required:
                 - image
                 type: object
@@ -55,19 +59,11 @@ spec:
                 items:
                   type: string
                 type: array
-              pipelineName:
-                type: string
-              pipelineRun:
-                type: string
-              pipelineVersion:
-                type: string
             required:
+            - id
             - inputPipes
             - jobSpec
             - outputPipes
-            - pipelineName
-            - pipelineRun
-            - pipelineVersion
             type: object
           status:
             description: ScheduleStatus defines the observed state of Schedule

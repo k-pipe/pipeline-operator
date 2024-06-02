@@ -159,6 +159,33 @@ spec:
                 description: PipelineStructure holds the information of steps and
                   pipes that constitute a pipeline
                 properties:
+                  jobSteps:
+                    items:
+                      description: PipelineJobStepSpec defines details of a pipeline
+                        step that will run as a job
+                      properties:
+                        config:
+                          x-kubernetes-preserve-unknown-fields: true
+                        description:
+                          type: string
+                        id:
+                          type: string
+                        jobSpec:
+                          description: JobSpec encapsulates the details of the kubernetes
+                            job wrapped by PipelineJob
+                          properties:
+                            image:
+                              type: string
+                            specification:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - image
+                          type: object
+                      required:
+                      - id
+                      - jobSpec
+                      type: object
+                    type: array
                   pipes:
                     items:
                       description: PipelinePipe defines details of a pipe connection
@@ -193,28 +220,27 @@ spec:
                       - to
                       type: object
                     type: array
-                  steps:
+                  subPipelines:
                     items:
-                      description: PipelineStep defines details of a single pipeline
-                        step
+                      description: SubPipelineSpec defines details of a pipeline step
+                        that will run as a sub-pipeline
                       properties:
+                        batched:
+                          type: boolean
                         description:
                           type: string
                         id:
                           type: string
-                        inputs:
-                          items:
-                            type: string
-                          type: array
-                        specification:
-                          x-kubernetes-preserve-unknown-fields: true
-                        type:
-                          description: 'enum: INPUT, JOB, PIPELINE, BATCHED, OUTPUT'
+                        namespace:
+                          type: string
+                        pipelineName:
+                          type: string
+                        versionPattern:
                           type: string
                       required:
                       - id
-                      - inputs
-                      - type
+                      - pipelineName
+                      - versionPattern
                       type: object
                     type: array
                 type: object
