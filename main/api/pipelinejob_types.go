@@ -16,7 +16,7 @@ type JobSpec struct {
 	// +kubebuilder:validation:Optional
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished"`
 	// +kubebuilder:validation:Optional
-	BackoffLimit *int32 `json:"activeDeadlineSeconds"`
+	BackoffLimit *int32 `json:"backoffLimit"`
 	// +kubebuilder:validation:Optional
 	ServiceAccountName string `json:"serviceAccountName"`
 
