@@ -32,9 +32,9 @@ type PipelineJobSpec struct {
 	Id string `json:"id"`
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description"`
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	InputPipes []string `json:"inputPipes"`
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	OutputPipes []string `json:"outputPipes"`
 	// +kubebuilder:validation:Required
 	JobSpec *JobSpec `json:"jobSpec"`
