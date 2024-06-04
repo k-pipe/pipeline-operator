@@ -174,10 +174,21 @@ spec:
                           description: JobSpec encapsulates the details of the kubernetes
                             job wrapped by PipelineJob
                           properties:
+                            activeDeadlineSeconds:
+                              format: int32
+                              type: integer
                             image:
+                              type: string
+                            serviceAccountName:
                               type: string
                             specification:
                               x-kubernetes-preserve-unknown-fields: true
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
+                            ttlSecondsAfterFinished:
+                              format: int32
+                              type: integer
                           required:
                           - image
                           type: object
