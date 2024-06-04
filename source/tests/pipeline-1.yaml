@@ -13,20 +13,20 @@ spec:
   name: "test-pipeline"
   version: "1.0.0"
   pipelineStructure:
-    steps:
+    jobSteps:
     - id: stepA
-      type: JOB
-      specification:
+      config:
         list:
           - 1
           - 2
           - 3
         string: "hello"
-      inputs: []
+      jobSpec:
+        image: dockerimage1
     - id: stepB
-      type: JOB
-      specification: ""
-      inputs: []
+      config: "This a config B"
+      jobSpec:
+        image: dockerimage1
     pipes:
     - from:
         stepId: stepA
@@ -34,8 +34,5 @@ spec:
       to:
         stepId: stepB
         name: pipeName2
-  configuration:
-    stepA: ABC
-    stepB: EFG
 
 

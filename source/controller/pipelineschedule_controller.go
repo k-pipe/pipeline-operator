@@ -32,6 +32,8 @@ import (
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
+// TODO add validation webhook according to this: https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation
+
 // PipelineScheduleReconciler reconciles a PipelineSchedule object
 type PipelineScheduleReconciler struct {
 	client.Client
