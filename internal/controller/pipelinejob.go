@@ -4,6 +4,7 @@ import (
 	"context"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
@@ -15,7 +16,7 @@ const (
 // status flags
 )
 
-// Gets a pipeline schedule object by name from api server, returns nil,nil if not found
+// Gets a pipeline job object by name from api server, returns nil,nil if not found
 func (r *PipelineJobReconciler) GetPipelineJob(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineJob, error) {
 	res := &pipelinev1.PipelineJob{}
 	err := r.Get(ctx, name, res)
@@ -30,7 +31,7 @@ func (r *PipelineJobReconciler) GetPipelineJob(ctx context.Context, name types.N
 	return res, err
 }
 
-// Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
+// Sets a status condition of the pipeline job
 func (r *PipelineJobReconciler) SetPipelineJobStatus(ctx context.Context, pr *pipelinev1.PipelineJob, statusType string, status metav1.ConditionStatus, message string) error {
 	log := log.FromContext(ctx)
 
@@ -66,88 +67,53 @@ func (r *PipelineJobReconciler) SetPipelineJobStatus(ctx context.Context, pr *pi
 /*
 create PipelineJob provided spec
 */
-func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipelinev1.PipelineRun, spec *pipelinev1.PipelineJobStepSpec) error {
-	//log := log.FromContext(ctx)
+func (r *PipelineJobReconciler) CreatePipelineJob(ctx context.Context, pr *pipelinev1.PipelineRun, spec *pipelinev1.PipelineJobStepSpec) error {
+	log := log.FromContext(ctx)
 
-	// the labels to be attached to cron job
-	/*	cjLabels := map[string]string{
-			"app.kubernetes.io/name":       "PipelineSchedule",
-			"app.kubernetes.io/instance":   spec.Id,
-			"app.kubernetes.io/version":    "v1",
-			"app.kubernetes.io/part-of":    "pipeline-operator",
-			"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
-		}
-		jobLabels := map[string]string{
-			"app.kubernetes.io/name":       "PipelineSchedule",
-			"app.kubernetes.io/instance":   spec.Id,
-			"app.kubernetes.io/version":    "v1",
-			"app.kubernetes.io/part-of":    "pipeline-operator",
-			"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
-		}
-		podLabels := map[string]string{
-			"app.kubernetes.io/name":       "PipelineSchedule",
-			"app.kubernetes.io/instance":   spec.Id,
-			"app.kubernetes.io/version":    "v1",
-			"app.kubernetes.io/part-of":    "pipeline-operator",
-			"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
-		}
-	*/
-	// define the cronjob object
-	/*	cj := &batchv1.CronJob{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      schedule.Name,
-				Namespace: schedule.Namespace,
-				Labels:    cjLabels,
-			},
-			Spec: batchv1.CronJobSpec{
-				Schedule:                sir.CronSpec,
-				TimeZone:                sir.TimeZone,
-				StartingDeadlineSeconds: nil,
-				ConcurrencyPolicy:       batchv1.ForbidConcurrent,
-				JobTemplate: batchv1.JobTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: jobLabels,
-					},
-					Spec: batchv1.JobSpec{
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: podLabels,
-							},
-							Spec: corev1.PodSpec{
-								RestartPolicy: corev1.RestartPolicyNever,
-								Containers: []corev1.Container{{
-									Image:           "busybox",
-									Name:            schedule.Name,
-									ImagePullPolicy: corev1.PullIfNotPresent,
-								}},
-							},
-						},
-					},
-				},
-			},
-		}
+	// the labels to be attached to job
+	jobLabels := map[string]string{
+		"app.kubernetes.io/name":       "PipelineSchedule",
+		"app.kubernetes.io/instance":   spec.Id,
+		"app.kubernetes.io/version":    "v1",
+		"app.kubernetes.io/part-of":    "pipeline-operator",
+		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
+	}
+	// the labels to be attached to the pod
+	jobName := pr.Name + "-" + spec.Id
+	// define the job object
+	pj := &pipelinev1.PipelineJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: pr.Namespace,
+			Labels:    jobLabels,
+		},
+		Spec: pipelinev1.PipelineJobSpec{
+			Id:          jobName,
+			Description: spec.Description,
+		},
+	}
 
-		// Set the ownerRef for the CronJob
-		// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
-		if err := ctrl.SetControllerReference(pr, cj, r.Scheme); err != nil {
-			log.Error(err, "failed to set controller owner reference")
-			return err
-		}
+	// Set the ownerRef for the PipelineJob
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+	if err := ctrl.SetControllerReference(pr, pj, r.Scheme); err != nil {
+		log.Error(err, "failed to set controller owner reference")
+		return err
+	}
 
-		// create the cronjob
-		log.Info(
-			"Creating a new Cronjob",
-			"CronJob.Namespace", cj.Namespace,
-			"CronJob.Name", cj.Name,
+	// create the cronjob
+	log.Info(
+		"Creating a new PipelineJob",
+		"PipelineJob.Namespace", pj.Namespace,
+		"PipelineJob.Name", pj.Name,
+	)
+	err := r.Create(ctx, pj)
+	if err != nil {
+		log.Error(
+			err, "Failed to create new PipelineJob",
+			"PipelineJob.Namespace", pj.Namespace,
+			"PipelineJob.Name", pj.Name,
 		)
-		err := r.Create(ctx, cj)
-		if err != nil {
-			log.Error(
-				err, "Failed to create new CronJob",
-				"CronJob.Namespace", schedule.Namespace,
-				"CronJob.Name", schedule.Name,
-			)
-		}*/
+	}
 
 	return nil
 }
