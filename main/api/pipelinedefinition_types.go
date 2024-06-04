@@ -73,8 +73,6 @@ type PipelineDefinitionSpec struct {
 	PlantUML *string `json:"plantUML"`
 	// +kubebuilder:validation:Required
 	PipelineStructure PipelineStructure `json:"pipelineStructure"`
-	// +kubebuilder:validation:Required
-	StepConfiguration map[string]string `json:"configuration"`
 }
 
 // ScheduleStatus defines the observed state of Schedule
