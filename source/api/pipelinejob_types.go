@@ -10,6 +10,17 @@ type JobSpec struct {
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
 	// +kubebuilder:validation:Optional
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds"`
+	// +kubebuilder:validation:Optional
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds"`
+	// +kubebuilder:validation:Optional
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished"`
+	// +kubebuilder:validation:Optional
+	BackoffLimit *int32 `json:"activeDeadlineSeconds"`
+	// +kubebuilder:validation:Optional
+	ServiceAccountName string `json:"serviceAccountName"`
+
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Specification json.RawMessage `json:"specification,omitempty"`
