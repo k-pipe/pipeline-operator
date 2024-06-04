@@ -33,9 +33,9 @@ type PipelineJobSpec struct {
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description"`
 	// +kubebuilder:validation:Required
-	InputPipes []*string `json:"inputPipes"`
+	InputPipes []string `json:"inputPipes"`
 	// +kubebuilder:validation:Required
-	OutputPipes []*string `json:"outputPipes"`
+	OutputPipes []string `json:"outputPipes"`
 	// +kubebuilder:validation:Required
 	JobSpec *JobSpec `json:"jobSpec"`
 }
