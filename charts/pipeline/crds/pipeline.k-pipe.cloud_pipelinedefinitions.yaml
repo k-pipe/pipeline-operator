@@ -37,10 +37,6 @@ spec:
             description: PipelineDefinitionSpec holds the definition of the pipeline
               structure, the configuration of steps, and meta information
             properties:
-              configuration:
-                additionalProperties:
-                  type: string
-                type: object
               description:
                 type: string
               name:
@@ -153,7 +149,6 @@ spec:
               version:
                 type: string
             required:
-            - configuration
             - name
             - pipelineStructure
             - version
