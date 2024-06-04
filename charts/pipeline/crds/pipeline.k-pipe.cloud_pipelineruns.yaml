@@ -175,6 +175,9 @@ spec:
                             job wrapped by PipelineJob
                           properties:
                             activeDeadlineSeconds:
+                              format: int64
+                              type: integer
+                            backoffLimit:
                               format: int32
                               type: integer
                             image:
