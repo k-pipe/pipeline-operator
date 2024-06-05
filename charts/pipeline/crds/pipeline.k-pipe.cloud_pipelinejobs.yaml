@@ -52,9 +52,9 @@ spec:
                     format: int64
                     type: integer
                   args:
-                    description: PullPolicy describes a policy for if/when to pull
-                      a container image
-                    type: string
+                    items:
+                      type: string
+                    type: array
                   backoffLimit:
                     format: int32
                     type: integer
@@ -63,6 +63,10 @@ spec:
                       type: string
                     type: array
                   image:
+                    type: string
+                  imagePullPolicy:
+                    description: PullPolicy describes a policy for if/when to pull
+                      a container image
                     type: string
                   serviceAccountName:
                     type: string
@@ -74,6 +78,8 @@ spec:
                   ttlSecondsAfterFinished:
                     format: int32
                     type: integer
+                  workingDir:
+                    type: string
                 required:
                 - image
                 type: object
