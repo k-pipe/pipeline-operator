@@ -18,7 +18,7 @@ type JobSpec struct {
 	// +kubebuilder:validation:Optional
 	BackoffLimit *int32 `json:"backoffLimit"`
 	// +kubebuilder:validation:Optional
-	ServiceAccountName string `json:"serviceAccountName"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Schemaless
@@ -30,12 +30,14 @@ type JobSpec struct {
 type PipelineJobSpec struct {
 	// +kubebuilder:validation:Required
 	Id string `json:"id"`
+	// +kubebuilder:validation:Required
+	PipelineRun string `json:"pipelineRun"`
 	// +kubebuilder:validation:Optional
-	Description *string `json:"description"`
+	Description *string `json:"description,omitempty"`
 	// +kubebuilder:validation:Optional
-	InputPipes []string `json:"inputPipes"`
+	InputPipes []string `json:"inputPipes,omitempty"`
 	// +kubebuilder:validation:Optional
-	OutputPipes []string `json:"outputPipes"`
+	OutputPipes []string `json:"outputPipes,omitempty"`
 	// +kubebuilder:validation:Required
 	JobSpec *JobSpec `json:"jobSpec"`
 }
