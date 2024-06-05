@@ -15,9 +15,9 @@ type JobSpec struct {
 	// +kubebuilder:validation:Optional
 	Args []string `json:"args,omitempty"`
 	// +kubebuilder:validation:Optional
-	WorkingDir string `json:"args,omitempty"`
+	WorkingDir string `json:"workingDir,omitempty"`
 	// +kubebuilder:validation:Optional
-	ImagePullPolicy v1.PullPolicy `json:"args,omitempty"`
+	ImagePullPolicy v1.PullPolicy `json:"imagePullPolicy,omitempty"`
 	// +kubebuilder:validation:Optional
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds"`
 	// +kubebuilder:validation:Optional
