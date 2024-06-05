@@ -14,7 +14,7 @@ spec:
   version: "1.0.0"
   pipelineStructure:
     jobSteps:
-    - id: stepA
+    - id: stepa
       config:
         list:
           - 1
@@ -22,17 +22,19 @@ spec:
           - 3
         string: "hello"
       jobSpec:
-        image: dockerimage1
-    - id: stepB
+        image: busybox
+        command: ["sleep"]
+        args: ["20"]
+    - id: stepb
       config: "This a config B"
       jobSpec:
-        image: dockerimage1
+        image: busybox
     pipes:
     - from:
-        stepId: stepA
+        stepId: stepa
         name: pipeName1
       to:
-        stepId: stepB
+        stepId: stepb
         name: pipeName2
 
 

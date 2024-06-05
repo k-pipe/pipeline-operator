@@ -2,14 +2,10 @@ package controller
 
 import (
 	"context"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -20,50 +16,16 @@ const (
 // Gets a pipeline schedule object by name from api server, returns nil,nil if not found
 func (r *PipelineScheduleReconciler) GetPipelineSchedule(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineSchedule, error) {
 	res := &pipelinev1.PipelineSchedule{}
-	err := r.Get(ctx, name, res)
-	if err != nil {
-		// no result will be returned in case of error
+	notexists, err := NotExistsResource(r, ctx, res, name)
+	if notexists {
 		res = nil
-		if apierrors.IsNotFound(err) {
-			// not found is not considered an error, we simply return nil,nil in that case
-			err = nil
-		}
 	}
 	return res, err
 }
 
 // Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
 func (r *PipelineScheduleReconciler) SetUpToDateStatus(ctx context.Context, ps *pipelinev1.PipelineSchedule, status metav1.ConditionStatus, message string) error {
-	log := log.FromContext(ctx)
-
-	if meta.IsStatusConditionPresentAndEqual(ps.Status.Conditions, UpToDate, status) {
-		// no change in status
-		return nil
-	}
-
-	// set the status condition
-	meta.SetStatusCondition(
-		&ps.Status.Conditions,
-		metav1.Condition{
-			Type:    UpToDate,
-			Status:  status,
-			Reason:  "Reconciling",
-			Message: message,
-		},
-	)
-
-	if err := r.Status().Update(ctx, ps); err != nil {
-		log.Error(err, "Failed to update PipelineSchedule status")
-		return err
-	}
-
-	// refetch should not be needed, in fact can be problematic...
-	//if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
-	//	log.Error(err, "Failed to re-fetch PipelineSchedule")
-	//	return err
-	//}
-
-	return nil
+	return SetStatusCondition(r.Status(), ctx, ps, &ps.Status.Conditions, UpToDate, status, message)
 }
 
 // Get the expected ScheduleInRange depending on the current time, returns nil if no ScheduleRange matches

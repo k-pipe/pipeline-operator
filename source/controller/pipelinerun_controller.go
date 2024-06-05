@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +33,8 @@ import (
 
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
+
+const STATUS_PREFIX = "success-"
 
 // PipelineRunReconciler reconciles a PipelineRun object
 type PipelineRunReconciler struct {
@@ -55,7 +58,7 @@ type PipelineRunReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	log.Info("Starting reconciliation (PipelineRun)")
+	log.Info("========================= Starting reconciliation (PipelineRun) =========================")
 
 	// get the pipeline run by name from request
 	pr, err := r.GetPipelineRun(ctx, req.NamespacedName)
@@ -95,8 +98,15 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if pd == nil {
 			return failed("No such pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
 		}
-		pr.Status.PipelineStructure = &pd.Spec.PipelineStructure
-		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d sub-pipelines, %d pipes", len(pr.Status.PipelineStructure.JobSteps), len(pr.Status.PipelineStructure.SubPipelines), len(pr.Status.PipelineStructure.Pipes))
+		// make a deep copy
+		structure := pd.Spec.PipelineStructure.DeepCopy()
+		// then remove all configs
+		for _, pjs := range structure.JobSteps {
+			pjs.Config = nil
+		}
+		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d sub-pipelines, %d pipes", len(structure.JobSteps), len(structure.SubPipelines), len(structure.Pipes))
+		pr.Status.PipelineStructure = structure
+		pr.Status.NumStepsTotal = len(structure.JobSteps) + len(structure.SubPipelines)
 		state := StructureLoaded
 		pr.Status.State = &state
 		if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, message); err != nil {
@@ -107,11 +117,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// if not paused nor terminated ...
 	if !(isTrue(pr, Paused) || isTrue(pr, Terminated)) {
-		log.Info("Updating job states")
-		//  updade running step state
-		// TODO
-
-		// find steps that can be started
+		log.Info("Looking for steps that can be started")
 		startable := findStartableSteps(pr)
 		if len(startable) > 0 {
 			var ids []string
@@ -121,13 +127,36 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Info(fmt.Sprintf("%d steps are startable", len(startable)), "startable", strings.Join(ids, ","))
 			for _, step := range findStartableSteps(pr) {
 				log.Info("Starting step: " + step.Id)
-				if err := startStep(ctx, pr, step); err != nil {
+				if err := r.CreatePipelineJob(ctx, pr, step); err != nil {
 					return failed("Failed to create job for step: "+step.Id, pr, r.Recorder), err
 				}
+				if r.SetPipelineRunStatus(ctx, pr, StepStatus(step.Id), v1.ConditionUnknown, "Started step: "+step.Id) != nil {
+					return failed("Failed to update PipelineRunStatus for job step: "+step.Id, pr, r.Recorder), err
+				}
+				r.Recorder.Event(pr, "Normal", "PipelineExecution", "Created PipelineJob: "+step.Id)
 			}
 		}
 	}
 
+	// count steps per success status
+	count := map[v1.ConditionStatus]int{}
+	for _, condition := range pr.Status.Conditions {
+		if strings.HasPrefix(condition.Type, STATUS_PREFIX) {
+			count[condition.Status]++
+		}
+	} // update counts if needed
+	if (pr.Status.NumStepsActive != count[v1.ConditionUnknown]) || (pr.Status.NumStepsSucceeded != count[v1.ConditionTrue]) || (pr.Status.NumStepsFailed != count[v1.ConditionFalse]) {
+		message := "Step statistics has changed: " + strconv.Itoa(pr.Status.NumStepsActive) + "/" + strconv.Itoa(pr.Status.NumStepsSucceeded) + "/" + strconv.Itoa(pr.Status.NumStepsFailed) + " --> " + strconv.Itoa(count[v1.ConditionUnknown]) + "/" + strconv.Itoa(count[v1.ConditionTrue]) + "/" + strconv.Itoa(count[v1.ConditionFalse])
+		pr.Status.NumStepsActive = count[v1.ConditionUnknown]
+		pr.Status.NumStepsSucceeded = count[v1.ConditionTrue]
+		pr.Status.NumStepsFailed = count[v1.ConditionFalse]
+		if err := r.Update(ctx, pr); err != nil {
+			return failed("Failed to update step statistics of PipelineRun", pr, r.Recorder), err
+		}
+		r.Recorder.Event(pr, "Normal", "PipelineExecution", message)
+	}
+
+	log.Info("========================= Terminated reconciliation (PipelineRun) =========================")
 	return ctrl.Result{}, nil
 }
 
@@ -154,30 +183,20 @@ func allInputsSucceeded(pr *pipelinev1.PipelineRun, step string) bool {
 	return true
 }
 
-func startStep(ctx context.Context, pr *pipelinev1.PipelineRun, step *pipelinev1.PipelineJobStepSpec) error {
-	//var j interface{}
-	//err := json.Unmarshal(step.Specification, &j)
-	//fmt.Println(err)
-	// TODO
-	//fmt.Println(step.Specification)
-
-	return nil
-}
-
 func isTrue(pr *pipelinev1.PipelineRun, condition string) bool {
 	return meta.IsStatusConditionPresentAndEqual(pr.Status.Conditions, condition, v1.ConditionTrue)
 }
 
 func isActive(pr *pipelinev1.PipelineRun, stepId string) bool {
-	return meta.FindStatusCondition(pr.Status.Conditions, stepStatus(stepId)) != nil
+	return meta.FindStatusCondition(pr.Status.Conditions, StepStatus(stepId)) != nil
 }
 
 func hasSucceeded(pr *pipelinev1.PipelineRun, stepId string) bool {
-	return isTrue(pr, stepStatus(stepId))
+	return isTrue(pr, StepStatus(stepId))
 }
 
-func stepStatus(stepId string) string {
-	return "success-" + stepId
+func StepStatus(stepId string) string {
+	return STATUS_PREFIX + stepId
 }
 
 // SetupWithManager sets up the controller with the Manager.
