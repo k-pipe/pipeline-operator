@@ -148,12 +148,16 @@ spec:
                   type: object
                 type: array
               numStepsActive:
+                format: int32
                 type: integer
               numStepsFailed:
+                format: int32
                 type: integer
               numStepsSucceeded:
+                format: int32
                 type: integer
               numStepsTotal:
+                format: int32
                 type: integer
               pipelineStructure:
                 description: PipelineStructure holds the information of steps and
