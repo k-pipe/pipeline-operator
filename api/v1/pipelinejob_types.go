@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/json"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -9,6 +10,14 @@ import (
 type JobSpec struct {
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
+	// +kubebuilder:validation:Optional
+	Command []string `json:"command,omitempty"`
+	// +kubebuilder:validation:Optional
+	Args []string `json:"args,omitempty"`
+	// +kubebuilder:validation:Optional
+	WorkingDir string `json:"workingDir,omitempty"`
+	// +kubebuilder:validation:Optional
+	ImagePullPolicy v1.PullPolicy `json:"imagePullPolicy,omitempty"`
 	// +kubebuilder:validation:Optional
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds"`
 	// +kubebuilder:validation:Optional
