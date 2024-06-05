@@ -63,9 +63,17 @@ spec:
                             activeDeadlineSeconds:
                               format: int64
                               type: integer
+                            args:
+                              description: PullPolicy describes a policy for if/when
+                                to pull a container image
+                              type: string
                             backoffLimit:
                               format: int32
                               type: integer
+                            command:
+                              items:
+                                type: string
+                              type: array
                             image:
                               type: string
                             serviceAccountName:
