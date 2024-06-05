@@ -20,7 +20,6 @@ import (
 	"context"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"time"
 
@@ -96,7 +95,8 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		//log.Info("Nothing to reconcile")
 		return requeue, nil
 	} else {
-		log.Info("Reconciliation started (" + message + ")")
+		log.Info("========================= Started reconciliation (PipelineSchedule) =========================")
+		log.Info("Reason for reconciliation: " + message)
 		// copy selected schedule in range data to status (for additionalPrinterColumns), this will be written together with UpToDateStatus
 		r.SetStatus(ps, sir)
 
@@ -134,7 +134,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	r.Recorder.Event(ps, "Normal", "Reconciliation", event+" ("+message+")")
 
 	// refetch the pipeline schedule object
-	if err := r.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, ps); err != nil {
+	if err := r.Get(ctx, NameSpacedName(ps), ps); err != nil {
 		return failed("Failed to re-fetch PipelineSchedule", ps, r.Recorder), err
 	}
 
@@ -142,6 +142,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, event); err != nil {
 		return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
 	}
+	log.Info("========================= Terminated reconciliation (PipelineSchedule) =========================")
 
 	log.Info("Done with reconciliation")
 	return requeue, nil

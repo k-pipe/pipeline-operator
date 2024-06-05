@@ -10,7 +10,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -23,14 +22,9 @@ const (
 // Get the cronjob of specified name, returns nil if there is none
 func (r *PipelineScheduleReconciler) GetCronJob(ctx context.Context, name types.NamespacedName) (*batchv1.CronJob, error) {
 	res := &batchv1.CronJob{}
-	err := r.Get(ctx, name, res)
-	if err != nil {
-		// no result will be returned in case of error
+	notexists, err := NotExistsResource(r, ctx, res, name)
+	if notexists {
 		res = nil
-		if apierrors.IsNotFound(err) {
-			// not found is not considered an error, we simply return nil,nil in that case
-			err = nil
-		}
 	}
 	return res, err
 }
@@ -113,7 +107,7 @@ func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, schedule
 		"CronJob.Namespace", cj.Namespace,
 		"CronJob.Name", cj.Name,
 	)
-	err := r.Create(ctx, cj)
+	err := CreateOrUpdate(r, r, ctx, cj, &batchv1.CronJob{})
 	if err != nil {
 		log.Error(
 			err, "Failed to create new CronJob",

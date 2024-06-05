@@ -4,6 +4,7 @@ import (
 	"context"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -11,10 +12,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Gets a pipeline job object by name from api server, returns nil,nil if not found
+func (r *PipelineJobReconciler) GetJob(ctx context.Context, name types.NamespacedName) (*batchv1.Job, error) {
+	res := &batchv1.Job{}
+	notexists, err := NotExistsResource(r, ctx, res, name)
+	if notexists {
+		res = nil
+	}
+	return res, err
+}
+
 /*
 create Kubernetes Job
 */
-func (r *PipelineRunReconciler) CreateJob(ctx context.Context, pj *pipelinev1.PipelineJob) error {
+func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.PipelineJob) (*batchv1.Job, error) {
 	log := log.FromContext(ctx)
 	jobName := pj.Name
 
@@ -38,6 +49,34 @@ func (r *PipelineRunReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	nonIndexed := batchv1.NonIndexedCompletion
 	var noSuspend bool = false
 	replaceAfterFailed := batchv1.Failed
+	var resources corev1.ResourceRequirements
+	terminationMessagePath := "/dev/termination-log" // TODO use this
+	jobContainer := corev1.Container{
+		Name:                     jobName,
+		Image:                    pj.Spec.JobSpec.Image,
+		Command:                  pj.Spec.JobSpec.Command,
+		Args:                     pj.Spec.JobSpec.Args,
+		WorkingDir:               pj.Spec.JobSpec.WorkingDir,
+		Ports:                    []corev1.ContainerPort{},
+		EnvFrom:                  []corev1.EnvFromSource{},
+		Env:                      []corev1.EnvVar{},
+		Resources:                resources,
+		ResizePolicy:             []corev1.ContainerResizePolicy{},
+		RestartPolicy:            nil, // only for init containers
+		VolumeMounts:             []corev1.VolumeMount{},
+		VolumeDevices:            []corev1.VolumeDevice{},
+		LivenessProbe:            nil,                    // TODO
+		ReadinessProbe:           nil,                    // TODO
+		StartupProbe:             nil,                    // TODO
+		Lifecycle:                nil,                    //
+		TerminationMessagePath:   terminationMessagePath, // TODO use this!
+		TerminationMessagePolicy: "File",                 // TODO
+		ImagePullPolicy:          pj.Spec.JobSpec.ImagePullPolicy,
+		SecurityContext:          nil, // TODO !!!
+		Stdin:                    false,
+		StdinOnce:                false,
+		TTY:                      false,
+	}
 	// define the job object
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -61,7 +100,7 @@ func (r *PipelineRunReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 				Spec: corev1.PodSpec{
 					Volumes:                       []corev1.Volume{},
 					InitContainers:                []corev1.Container{},
-					Containers:                    []corev1.Container{},
+					Containers:                    []corev1.Container{jobContainer},
 					EphemeralContainers:           nil,
 					RestartPolicy:                 corev1.RestartPolicyOnFailure,
 					TerminationGracePeriodSeconds: pj.Spec.JobSpec.TerminationGracePeriodSeconds,
@@ -106,7 +145,7 @@ func (r *PipelineRunReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(pj, job, r.Scheme); err != nil {
 		log.Error(err, "failed to set controller owner reference")
-		return err
+		return nil, err
 	}
 
 	// create the cronjob
@@ -115,14 +154,27 @@ func (r *PipelineRunReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 		"Job.Namespace", job.Namespace,
 		"Job.Name", job.Name,
 	)
-	err := r.Create(ctx, job)
+	err := CreateOrUpdate(r, r, ctx, job, &batchv1.Job{})
 	if err != nil {
 		log.Error(
 			err, "Failed to create new Job",
 			"Job.Namespace", job.Namespace,
 			"Job.Name", job.Name,
 		)
+		return nil, err
 	}
 
-	return nil
+	return job, nil
+}
+
+func isTrueInJob(j *batchv1.Job, conditionType batchv1.JobConditionType) bool {
+	if j.Status.Conditions == nil {
+		return false
+	}
+	for _, condition := range j.Status.Conditions {
+		if condition.Type == conditionType {
+			return condition.Status == corev1.ConditionTrue
+		}
+	}
+	return false
 }
