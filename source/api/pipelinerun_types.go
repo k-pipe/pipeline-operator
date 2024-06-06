@@ -26,13 +26,13 @@ type PipelineRunStatus struct {
 	// +kubebuilder:validation:Optional
 	PipelineStructure *PipelineStructure `json:"pipelineStructure"`
 	// +kubebuilder:validation:Required
-	NumStepsActive int32 `json:"numStepsActive"`
+	NumStepsActive int `json:"numStepsActive"`
 	// +kubebuilder:validation:Required
-	NumStepsSucceeded int32 `json:"numStepsSucceeded"`
+	NumStepsSucceeded int `json:"numStepsSucceeded"`
 	// +kubebuilder:validation:Required
-	NumStepsFailed int32 `json:"numStepsFailed"`
+	NumStepsFailed int `json:"numStepsFailed"`
 	// +kubebuilder:validation:Required
-	NumStepsTotal int32   `json:"numStepsTotal"`
+	NumStepsTotal int     `json:"numStepsTotal"`
 	State         *string `json:"state"`
 }
 
