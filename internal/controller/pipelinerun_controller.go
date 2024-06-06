@@ -150,7 +150,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		pr.Status.NumStepsActive = count[v1.ConditionUnknown]
 		pr.Status.NumStepsSucceeded = count[v1.ConditionTrue]
 		pr.Status.NumStepsFailed = count[v1.ConditionFalse]
-		if err := r.Update(ctx, pr); err != nil {
+		if err := r.Status().Update(ctx, pr); err != nil {
 			return failed("Failed to update step statistics of PipelineRun", pr, r.Recorder), err
 		}
 		r.Recorder.Event(pr, "Normal", "PipelineExecution", message)
