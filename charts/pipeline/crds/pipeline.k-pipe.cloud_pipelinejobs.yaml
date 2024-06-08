@@ -40,15 +40,13 @@ spec:
                 type: string
               id:
                 type: string
-              inputPipes:
-                items:
-                  type: string
-                type: array
               inputVolumes:
                 items:
                   description: InputPipe defines source and target name of input pipe
                     file
                   properties:
+                    mountPath:
+                      type: string
                     sourceFile:
                       type: string
                     targetFile:
@@ -56,6 +54,7 @@ spec:
                     volume:
                       type: string
                   required:
+                  - mountPath
                   - sourceFile
                   - targetFile
                   - volume
@@ -100,10 +99,6 @@ spec:
                 required:
                 - image
                 type: object
-              outputPipes:
-                items:
-                  type: string
-                type: array
               pipelineRun:
                 type: string
               stepId:
