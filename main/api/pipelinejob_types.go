@@ -38,11 +38,13 @@ type JobSpec struct {
 /* InputPipe defines source and target name of input pipe file */
 type InputPipe struct {
 	// +kubebuilder:validation:Required
-	volume string `json:"volume"`
+	Volume string `json:"volume"`
 	// +kubebuilder:validation:Required
-	sourceFile string `json:"sourceFile"`
+	MountPath string `json:"mountPath"`
 	// +kubebuilder:validation:Required
-	targetFile string `json:"targetFile"`
+	SourceFile string `json:"sourceFile"`
+	// +kubebuilder:validation:Required
+	TargetFile string `json:"targetFile"`
 }
 
 /* PipelineJobSpec defines the specs of a PipelineStep */
@@ -57,10 +59,6 @@ type PipelineJobSpec struct {
 	Description *string `json:"description,omitempty"`
 	// +kubebuilder:validation:Optional
 	Inputs []InputPipe `json:"inputVolumes,omitempty"`
-	// +kubebuilder:validation:Optional
-	InputPipes []string `json:"inputPipes,omitempty"`
-	// +kubebuilder:validation:Optional
-	OutputPipes []string `json:"outputPipes,omitempty"`
 	// +kubebuilder:validation:Required
 	JobSpec *JobSpec `json:"jobSpec"`
 }
