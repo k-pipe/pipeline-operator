@@ -55,15 +55,15 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	// collect inputs
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
-	for stepId, volume := range pj.Spec.InputVolumes {
-		volumes = append(volumes, getVolume(volume, true))
-		volumeMounts = append(volumeMounts, getVolumeMount(stepId, volume))
+	for _, in := range pj.Spec.Inputs {
+		volumes = append(volumes, getVolume(in.Volume, true))
+		volumeMounts = append(volumeMounts, getVolumeMount(in.Volume, in.MountPath))
 	}
 	// add output volume for the step
 	stepId := pj.Spec.StepId
 	volume := GetVolumeName(jobName, stepId)
 	volumes = append(volumes, getVolume(volume, false))
-	volumeMounts = append(volumeMounts, getVolumeMount(stepId, volume))
+	volumeMounts = append(volumeMounts, getVolumeMount(volume, getMountPath(stepId)))
 
 	jobContainer := corev1.Container{
 		Name:                     jobName,
@@ -193,10 +193,10 @@ func getVolume(volume string, readOnly bool) corev1.Volume {
 	}
 }
 
-func getVolumeMount(stepId string, volume string) corev1.VolumeMount {
+func getVolumeMount(volume string, mountPath string) corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      volume,
-		MountPath: getMountPath(stepId),
+		MountPath: mountPath,
 	}
 }
 

@@ -48,12 +48,20 @@ create PipelineJob provided spec
 */
 func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipelinev1.PipelineRun, spec *pipelinev1.PipelineJobStepSpec) error {
 	log := log.FromContext(ctx)
+	// the labels to be attached to the pod
+	jobName := pr.Name + "-" + spec.Id
 
-	// create the input pipes names
-	var inputPipes []string
-	for i, pipe := range pr.Status.PipelineStructure.Pipes {
-		if pipe.To.StepId == spec.Id {
-			inputPipes = append(inputPipes, pr.Name+"-"+strconv.Itoa(i))
+	stepId := spec.Id
+	// create the input volume names
+	var inputs []pipelinev1.InputPipe
+	for _, pipe := range pr.Status.PipelineStructure.Pipes {
+		if pipe.To.StepId == stepId {
+			inputs = append(inputs, pipelinev1.InputPipe{
+				Volume:     GetVolumeName(jobName, pipe.From.StepId),
+				MountPath:  getMountPath(pipe.From.StepId),
+				SourceFile: pipe.From.Name,
+				TargetFile: pipe.To.Name,
+			})
 		}
 	}
 
@@ -73,8 +81,6 @@ func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipel
 		"app.kubernetes.io/part-of":    "pipeline-operator",
 		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
 	}
-	// the labels to be attached to the pod
-	jobName := pr.Name + "-" + spec.Id
 	// define the job object
 	pj := &pipelinev1.PipelineJob{
 		ObjectMeta: metav1.ObjectMeta{
@@ -85,8 +91,7 @@ func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipel
 		Spec: pipelinev1.PipelineJobSpec{
 			Id:          jobName,
 			Description: spec.Description,
-			InputPipes:  inputPipes,
-			OutputPipes: outputPipes,
+			Inputs:      inputs,
 			JobSpec:     spec.JobSpec.DeepCopy(),
 			PipelineRun: pr.Name,
 			StepId:      spec.Id,
