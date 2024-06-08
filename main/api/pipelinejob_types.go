@@ -46,6 +46,8 @@ type PipelineJobSpec struct {
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description,omitempty"`
 	// +kubebuilder:validation:Optional
+	InputVolumes map[string]string `json:"inputVolumes,omitempty"`
+	// +kubebuilder:validation:Optional
 	InputPipes []string `json:"inputPipes,omitempty"`
 	// +kubebuilder:validation:Optional
 	OutputPipes []string `json:"outputPipes,omitempty"`
