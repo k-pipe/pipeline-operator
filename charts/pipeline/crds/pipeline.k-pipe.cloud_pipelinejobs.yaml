@@ -45,9 +45,22 @@ spec:
                   type: string
                 type: array
               inputVolumes:
-                additionalProperties:
-                  type: string
-                type: object
+                items:
+                  description: InputPipe defines source and target name of input pipe
+                    file
+                  properties:
+                    sourceFile:
+                      type: string
+                    targetFile:
+                      type: string
+                    volume:
+                      type: string
+                  required:
+                  - sourceFile
+                  - targetFile
+                  - volume
+                  type: object
+                type: array
               jobSpec:
                 description: JobSpec encapsulates the details of the kubernetes job
                   wrapped by PipelineJob
