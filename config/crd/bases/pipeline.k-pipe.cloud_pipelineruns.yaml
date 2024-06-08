@@ -281,7 +281,6 @@ spec:
             - numStepsFailed
             - numStepsSucceeded
             - numStepsTotal
-            - state
             type: object
         type: object
     served: true
