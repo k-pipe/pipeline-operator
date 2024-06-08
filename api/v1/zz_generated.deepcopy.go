@@ -265,6 +265,13 @@ func (in *PipelineJobSpec) DeepCopyInto(out *PipelineJobSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.InputVolumes != nil {
+		in, out := &in.InputVolumes, &out.InputVolumes
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.InputPipes != nil {
 		in, out := &in.InputPipes, &out.InputPipes
 		*out = make([]string, len(*in))

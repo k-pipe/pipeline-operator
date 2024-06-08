@@ -44,6 +44,10 @@ spec:
                 items:
                   type: string
                 type: array
+              inputVolumes:
+                additionalProperties:
+                  type: string
+                type: object
               jobSpec:
                 description: JobSpec encapsulates the details of the kubernetes job
                   wrapped by PipelineJob
