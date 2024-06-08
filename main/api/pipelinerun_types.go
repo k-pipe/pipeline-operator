@@ -32,8 +32,9 @@ type PipelineRunStatus struct {
 	// +kubebuilder:validation:Required
 	NumStepsFailed int `json:"numStepsFailed"`
 	// +kubebuilder:validation:Required
-	NumStepsTotal int     `json:"numStepsTotal"`
-	State         *string `json:"state"`
+	NumStepsTotal int `json:"numStepsTotal"`
+	// +kubebuilder:validation:Optional
+	State *string `json:"state"`
 }
 
 //+kubebuilder:object:root=true
