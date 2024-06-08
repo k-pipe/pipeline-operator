@@ -51,6 +51,20 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	replaceAfterFailed := batchv1.Failed
 	var resources corev1.ResourceRequirements
 	terminationMessagePath := "/dev/termination-log" // TODO use this
+
+	// collect inputs
+	volumes := []corev1.Volume{}
+	volumeMounts := []corev1.VolumeMount{}
+	for stepId, volume := range pj.Spec.InputVolumes {
+		volumes = append(volumes, getVolume(volume, true))
+		volumeMounts = append(volumeMounts, getVolumeMount(stepId, volume))
+	}
+	// add output volume for the step
+	stepId := pj.Spec.StepId
+	volume := GetVolumeName(jobName, stepId)
+	volumes = append(volumes, getVolume(volume, false))
+	volumeMounts = append(volumeMounts, getVolumeMount(stepId, volume))
+
 	jobContainer := corev1.Container{
 		Name:                     jobName,
 		Image:                    pj.Spec.JobSpec.Image,
@@ -63,7 +77,7 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 		Resources:                resources,
 		ResizePolicy:             []corev1.ContainerResizePolicy{},
 		RestartPolicy:            nil, // only for init containers
-		VolumeMounts:             []corev1.VolumeMount{},
+		VolumeMounts:             volumeMounts,
 		VolumeDevices:            []corev1.VolumeDevice{},
 		LivenessProbe:            nil,                    // TODO
 		ReadinessProbe:           nil,                    // TODO
@@ -98,7 +112,7 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 					Labels: podLabels,
 				},
 				Spec: corev1.PodSpec{
-					Volumes:                       []corev1.Volume{},
+					Volumes:                       volumes,
 					InitContainers:                []corev1.Container{},
 					Containers:                    []corev1.Container{jobContainer},
 					EphemeralContainers:           nil,
@@ -165,6 +179,33 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	}
 
 	return job, nil
+}
+
+func getVolume(volume string, readOnly bool) corev1.Volume {
+	return corev1.Volume{
+		Name: volume,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: volume, // claim gets same name as volume it claims
+				ReadOnly:  readOnly,
+			},
+		},
+	}
+}
+
+func getVolumeMount(stepId string, volume string) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      volume,
+		MountPath: getMountPath(stepId),
+	}
+}
+
+func GetVolumeName(jobName string, stepId string) string {
+	return jobName + "-" + stepId
+}
+
+func getMountPath(stepId string) string {
+	return "/vol/" + stepId
 }
 
 func isTrueInJob(j *batchv1.Job, conditionType batchv1.JobConditionType) bool {

@@ -61,116 +61,130 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	log.Info("========================= Starting reconciliation (PipelineRun) =========================")
 
 	// get the pipeline run by name from request
-	pr, err := r.GetPipelineRun(ctx, req.NamespacedName)
-	if pr == nil {
-		// not found, this may happen when a resource is deleted, just end the reconciliation
-		log.Info("PipelineRun resource not found. Ignoring since object has been deleted")
-		return ctrl.Result{}, nil
-	}
-	if err != nil {
-		// any other error will be logged
-		return failed("Failed to get PipelineRun", pr, r.Recorder), err
+	pr, result, err := r.loadResource(ctx, req.NamespacedName)
+	if result != nil {
+		return *result, err
 	}
 
 	// determine pipeline version if not set, yet
 	if (pr.Status.PipelineVersion == nil) || !isTrue(pr, VersionDetermined) {
-		log.Info("Determining pipeline version")
-		err := r.DeterminePipelineVersion(ctx, pr)
-		if err != nil {
-			// any other error will be logged
-			return failed("Failed to determine which pipeline version to run", pr, r.Recorder), err
-		}
-		state := VersionDetermined
-		pr.Status.State = &state
-		if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, "Pipeline version used for run: "+*pr.Status.PipelineVersion); err != nil {
-			return failed("Failed to set PipelineRun status", pr, r.Recorder), err
-		}
-		r.Recorder.Event(pr, "Normal", "Reconciliation", "Pipeline version determined: "+*pr.Status.PipelineVersion)
+		return r.determinePipelineVersion(ctx, pr)
 	}
 
 	// load pipeline structure if not set, yet
 	if (pr.Status.PipelineStructure == nil) || !isTrue(pr, StructureLoaded) {
-		pipelineDefinition := pr.Spec.PipelineName + "-" + *pr.Status.PipelineVersion
-		pd, err := GetPipelineDefinition(r, ctx, types.NamespacedName{Name: pipelineDefinition, Namespace: pr.Namespace})
-		if err != nil {
-			return failed("Failed to load pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
-		}
-		if pd == nil {
-			return failed("No such pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
-		}
-		// make a deep copy
-		structure := pd.Spec.PipelineStructure.DeepCopy()
-		// then remove all configs
-		for _, pjs := range structure.JobSteps {
-			pjs.Config = nil
-		}
-		message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d sub-pipelines, %d pipes", len(structure.JobSteps), len(structure.SubPipelines), len(structure.Pipes))
-		pr.Status.PipelineStructure = structure
-		pr.Status.NumStepsTotal = len(structure.JobSteps) + len(structure.SubPipelines)
-		state := StructureLoaded
-		pr.Status.State = &state
-		if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, message); err != nil {
-			return failed("Failed to set PipelineRun status", pr, r.Recorder), err
-		}
-		r.Recorder.Event(pr, "Normal", "Reconciliation", message)
+		return r.storePipelineStructure(ctx, pr)
 	}
 
 	// if not paused nor terminated ...
 	if !(isTrue(pr, Paused) || isTrue(pr, Terminated)) {
-		log.Info("Looking for steps that can be started")
-		startable := findStartableSteps(pr)
-		if len(startable) > 0 {
-			var ids []string
-			for _, s := range startable {
-				ids = append(ids, s.Id)
-			}
-			log.Info(fmt.Sprintf("%d steps are startable", len(startable)), "startable", strings.Join(ids, ","))
-			for _, step := range findStartableSteps(pr) {
-				log.Info("Starting step: " + step.Id)
-				if err := r.CreatePipelineJob(ctx, pr, step); err != nil {
-					return failed("Failed to create job for step: "+step.Id, pr, r.Recorder), err
-				}
-				if r.SetPipelineRunStatus(ctx, pr, StepStatus(step.Id), v1.ConditionUnknown, "Started step: "+step.Id) != nil {
-					return failed("Failed to update PipelineRunStatus for job step: "+step.Id, pr, r.Recorder), err
-				}
-				r.Recorder.Event(pr, "Normal", "PipelineExecution", "Created PipelineJob: "+step.Id)
-			}
+		result, err := r.startStartableStep(ctx, pr)
+		if result != nil {
+			return *result, err
 		}
 	}
 
-	// count steps per success status
-	count := map[v1.ConditionStatus]int{}
-	for _, condition := range pr.Status.Conditions {
-		if strings.HasPrefix(condition.Type, STATUS_PREFIX) {
-			count[condition.Status]++
-		}
-	} // update counts if needed
-	if (pr.Status.NumStepsActive != count[v1.ConditionUnknown]) || (pr.Status.NumStepsSucceeded != count[v1.ConditionTrue]) || (pr.Status.NumStepsFailed != count[v1.ConditionFalse]) {
-		message := "Step statistics has changed: " + strconv.Itoa(pr.Status.NumStepsActive) + "/" + strconv.Itoa(pr.Status.NumStepsSucceeded) + "/" + strconv.Itoa(pr.Status.NumStepsFailed) + " --> " + strconv.Itoa(count[v1.ConditionUnknown]) + "/" + strconv.Itoa(count[v1.ConditionTrue]) + "/" + strconv.Itoa(count[v1.ConditionFalse])
-		pr.Status.NumStepsActive = count[v1.ConditionUnknown]
-		pr.Status.NumStepsSucceeded = count[v1.ConditionTrue]
-		pr.Status.NumStepsFailed = count[v1.ConditionFalse]
-		if err := r.Status().Update(ctx, pr); err != nil {
-			return failed("Failed to update step statistics of PipelineRun", pr, r.Recorder), err
-		}
-		r.Recorder.Event(pr, "Normal", "PipelineExecution", message)
+	// update step statistics
+	result, err = r.updateStepStatistics(ctx, pr)
+	if result != nil {
+		return *result, err
 	}
 
 	log.Info("========================= Terminated reconciliation (PipelineRun) =========================")
 	return ctrl.Result{}, nil
 }
 
-// find all job steps that are startable (i.e. not active yet and all input steps have succeeded)
-func findStartableSteps(pr *pipelinev1.PipelineRun) []*pipelinev1.PipelineJobStepSpec {
-	var res []*pipelinev1.PipelineJobStepSpec
+func (r *PipelineRunReconciler) loadResource(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineRun, *ctrl.Result, error) {
+	pr, err := r.GetPipelineRun(ctx, name)
+	if pr == nil {
+		// not found, this may happen when a resource is deleted, just end the reconciliation
+		log.FromContext(ctx).Info("PipelineRun resource not found. Ignoring since object has been deleted")
+		return nil, &ctrl.Result{}, nil
+	}
+	if err != nil {
+		// any other error will be logged
+		res := failed("Failed to get PipelineRun", pr, r.Recorder)
+		return nil, &res, err
+	}
+	// return nil result to indicate that reconciliation can proceed
+	return pr, nil, nil
+}
+
+func (r *PipelineRunReconciler) determinePipelineVersion(ctx context.Context, pr *pipelinev1.PipelineRun) (ctrl.Result, error) {
+	log.FromContext(ctx).Info("Determining pipeline version")
+	err := r.DeterminePipelineVersion(ctx, pr)
+	if err != nil {
+		// any other error will be logged
+		return failed("Failed to determine which pipeline version to run", pr, r.Recorder), err
+	}
+	state := VersionDetermined
+	pr.Status.State = &state
+	if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, "Pipeline version used for run: "+*pr.Status.PipelineVersion); err != nil {
+		return failed("Failed to set PipelineRun status", pr, r.Recorder), err
+	}
+	r.Recorder.Event(pr, "Normal", "Reconciliation", "Pipeline version determined: "+*pr.Status.PipelineVersion)
+	// changes to state have been made, return empty result to stop current reconciliation iteration
+	return ctrl.Result{}, nil
+}
+
+func (r *PipelineRunReconciler) storePipelineStructure(ctx context.Context, pr *pipelinev1.PipelineRun) (ctrl.Result, error) {
+	pipelineDefinition := pr.Spec.PipelineName + "-" + *pr.Status.PipelineVersion
+	pd, err := GetPipelineDefinition(r, ctx, types.NamespacedName{Name: pipelineDefinition, Namespace: pr.Namespace})
+	if err != nil {
+		return failed("Failed to load pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
+	}
+	if pd == nil {
+		return failed("No such pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
+	}
+	// make a deep copy
+	structure := pd.Spec.PipelineStructure.DeepCopy()
+	// then remove all configs
+	for _, pjs := range structure.JobSteps {
+		pjs.Config = nil
+	}
+	message := fmt.Sprintf("Pipeline structure loaded: %d steps, %d sub-pipelines, %d pipes", len(structure.JobSteps), len(structure.SubPipelines), len(structure.Pipes))
+	pr.Status.PipelineStructure = structure
+	pr.Status.NumStepsTotal = len(structure.JobSteps) + len(structure.SubPipelines)
+	state := StructureLoaded
+	pr.Status.State = &state
+	if err = r.SetPipelineRunStatus(ctx, pr, state, v1.ConditionTrue, message); err != nil {
+		return failed("Failed to set PipelineRun status", pr, r.Recorder), err
+	}
+	r.Recorder.Event(pr, "Normal", "Reconciliation", message)
+	// changes to state have been made, return empty result to stop current reconciliation iteration
+	return ctrl.Result{}, nil
+}
+
+func (r *PipelineRunReconciler) startStartableStep(ctx context.Context, pr *pipelinev1.PipelineRun) (*ctrl.Result, error) {
+	log := log.FromContext(ctx)
+	log.Info("Looking for steps that can be started")
+	if step := findNextStartableStep(pr); step != nil {
+		log.Info("Step is startable: " + step.Id)
+		log.Info("Starting step: " + step.Id)
+		if err := r.CreatePipelineJob(ctx, pr, step); err != nil {
+			result := failed("Failed to create job for step: "+step.Id, pr, r.Recorder)
+			return &result, err
+		}
+		if err := r.SetPipelineRunStatus(ctx, pr, StepStatus(step.Id), v1.ConditionUnknown, "Started step: "+step.Id); err != nil {
+			result := failed("Failed to update PipelineRunStatus for job step: "+step.Id, pr, r.Recorder)
+			return &result, err
+		}
+		r.Recorder.Event(pr, "Normal", "PipelineExecution", "Created PipelineJob: "+step.Id)
+		// changes to state have been made, return empty result to stop current reconciliation iteration
+		return &ctrl.Result{}, nil
+	}
+	// return nil result to indicate that reconciliation can proceed
+	return nil, nil
+}
+
+// find a job step that is startable (i.e. not active yet and all input steps have succeeded)
+func findNextStartableStep(pr *pipelinev1.PipelineRun) *pipelinev1.PipelineJobStepSpec {
 	for _, step := range pr.Status.PipelineStructure.JobSteps {
-		if !isActive(pr, step.Id) {
-			if allInputsSucceeded(pr, step.Id) {
-				res = append(res, step)
-			}
+		if !isActive(pr, step.Id) && allInputsSucceeded(pr, step.Id) {
+			return step
 		}
 	}
-	return res
+	return nil
 }
 
 // check all input steps (those at the other end of a pipe that has the given step as target), whether they succeeded
@@ -181,6 +195,32 @@ func allInputsSucceeded(pr *pipelinev1.PipelineRun, step string) bool {
 		}
 	}
 	return true
+}
+
+func (r *PipelineRunReconciler) updateStepStatistics(ctx context.Context, pr *pipelinev1.PipelineRun) (*ctrl.Result, error) {
+	// count steps per success status
+	count := map[v1.ConditionStatus]int{}
+	for _, condition := range pr.Status.Conditions {
+		if strings.HasPrefix(condition.Type, STATUS_PREFIX) {
+			count[condition.Status]++
+		}
+	}
+	// update counts if needed
+	if (pr.Status.NumStepsActive != count[v1.ConditionUnknown]) || (pr.Status.NumStepsSucceeded != count[v1.ConditionTrue]) || (pr.Status.NumStepsFailed != count[v1.ConditionFalse]) {
+		message := "Step statistics has changed: " + strconv.Itoa(pr.Status.NumStepsActive) + "/" + strconv.Itoa(pr.Status.NumStepsSucceeded) + "/" + strconv.Itoa(pr.Status.NumStepsFailed) + " --> " + strconv.Itoa(count[v1.ConditionUnknown]) + "/" + strconv.Itoa(count[v1.ConditionTrue]) + "/" + strconv.Itoa(count[v1.ConditionFalse])
+		pr.Status.NumStepsActive = count[v1.ConditionUnknown]
+		pr.Status.NumStepsSucceeded = count[v1.ConditionTrue]
+		pr.Status.NumStepsFailed = count[v1.ConditionFalse]
+		if err := r.Status().Update(ctx, pr); err != nil {
+			result := failed("Failed to update step statistics of PipelineRun", pr, r.Recorder)
+			return &result, err
+		}
+		r.Recorder.Event(pr, "Normal", "PipelineExecution", message)
+		// changes to state have been made, return empty result to stop current reconciliation iteration
+		return &ctrl.Result{}, nil
+	}
+	// return nil result to indicate that reconciliation can proceed
+	return nil, nil
 }
 
 func isTrue(pr *pipelinev1.PipelineRun, condition string) bool {
