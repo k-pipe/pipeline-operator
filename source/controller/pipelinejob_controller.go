@@ -72,8 +72,7 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// update job status if changed
-	result, err = r.updatedJobStatus(ctx, log, pj, j)
-	if result != nil {
+	if result, err = r.updatedJobStatus(ctx, log, pj, j); result != nil {
 		return *result, err
 	}
 

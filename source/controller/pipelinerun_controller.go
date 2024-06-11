@@ -85,8 +85,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// update step statistics
-	result, err = r.updateStepStatistics(ctx, pr)
-	if result != nil {
+	if result, err = r.updateStepStatistics(ctx, pr); result != nil {
 		return *result, err
 	}
 
