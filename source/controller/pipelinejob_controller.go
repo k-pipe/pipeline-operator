@@ -25,12 +25,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
 // PipelineJobReconciler reconciles a PipelineJob object
@@ -54,14 +52,14 @@ type PipelineJobReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-	log.Info("========================= Starting reconciliation (PipelineJob) =========================")
+	log := Logger(ctx, req, "PJ")
+	defer LoggingDone(log)
 
 	// get the pipeline run by name from request
 	pj, err := r.GetPipelineJob(ctx, req.NamespacedName)
 	if pj == nil {
 		// not found, this may happen when a resource is deleted, just end the reconciliation
-		log.Info("PipelineJob resource not found. Ignoring since object has been deleted")
+		log("PipelineJob resource not found. Ignoring since object has been deleted")
 		return ctrl.Result{}, nil
 	}
 	if err != nil {
@@ -72,14 +70,14 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// create job if it does not exist, yet
 	j, err := r.GetJob(ctx, req.NamespacedName)
 	if j == nil {
-		log.Info("Creating Job resource")
-		j, err = r.CreateJob(ctx, pj)
+		log("Creating Job resource")
+		j, err = r.CreateJob(ctx, log, pj)
 		if err != nil {
 			// any other error will be logged
 			return failed("Failed to create Job", j, r.Recorder), err
 		}
 
-		if r.SetPipelineJobStatus(ctx, pj, JobCreated, metav1.ConditionTrue, "Created Job: "+j.Name) != nil {
+		if r.SetPipelineJobStatus(ctx, log, pj, JobCreated, metav1.ConditionTrue, "Created Job: "+j.Name) != nil {
 			return failed("Failed to create Job: "+j.Name, j, r.Recorder), err
 		}
 		r.Recorder.Event(pj, "Normal", "Reconciliation", "Created Job: "+j.Name)
@@ -117,17 +115,16 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if err != nil || pr == nil {
 			return failed("Failed to get PipelineRun resource for updating JobSucceeded status", j, r.Recorder), err
 		}
-		r.SetPipelineRunStatus(ctx, pr, StepStatus(pj.Spec.StepId), newSucceededState, message)
+		r.SetPipelineRunStatus(ctx, log, pr, StepStatus(pj.Spec.StepId), newSucceededState, message)
 
 		// last set it on PipelineJob
-		if r.SetPipelineJobStatus(ctx, pj, JobSucceeded, newSucceededState, message) != nil {
+		if r.SetPipelineJobStatus(ctx, log, pj, JobSucceeded, newSucceededState, message) != nil {
 			return failed("Failed to set PipelineJob succeeded status", j, r.Recorder), err
 		}
 
 		// finally record an event if successful
 		r.Recorder.Event(pj, "Normal", "Reconciliation", message)
 	}
-	log.Info("========================= Terminated reconciliation (PipelineJob) =========================")
 
 	return ctrl.Result{}, nil
 }

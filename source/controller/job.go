@@ -2,14 +2,12 @@ package controller
 
 import (
 	"context"
+	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Gets a pipeline job object by name from api server, returns nil,nil if not found
@@ -25,8 +23,7 @@ func (r *PipelineJobReconciler) GetJob(ctx context.Context, name types.Namespace
 /*
 create Kubernetes Job
 */
-func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.PipelineJob) (*batchv1.Job, error) {
-	log := log.FromContext(ctx)
+func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, ...interface{}), pj *pipelinev1.PipelineJob) (*batchv1.Job, error) {
 	jobName := pj.Name
 
 	// the labels to be attached to job
@@ -56,12 +53,14 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
 	for _, in := range pj.Spec.Inputs {
-		volumes = append(volumes, getVolume(in.Volume, true))
-		volumeMounts = append(volumeMounts, getVolumeMount(in.Volume, in.MountPath))
+		if !volumePresentAlready(in.Volume, volumes) {
+			volumes = append(volumes, getVolume(in.Volume, true))
+			volumeMounts = append(volumeMounts, getVolumeMount(in.Volume, in.MountPath))
+		}
 	}
 	// add output volume for the step
 	stepId := pj.Spec.StepId
-	volume := GetVolumeName(jobName, stepId)
+	volume := jobName // volume and volume claim get same name as job from which the data comes
 	volumes = append(volumes, getVolume(volume, false))
 	volumeMounts = append(volumeMounts, getVolumeMount(volume, getMountPath(stepId)))
 
@@ -158,27 +157,29 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, pj *pipelinev1.Pi
 	// Set the ownerRef for the Job
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(pj, job, r.Scheme); err != nil {
-		log.Error(err, "failed to set controller owner reference")
 		return nil, err
 	}
 
 	// create the cronjob
-	log.Info(
+	log(
 		"Creating a new Job",
 		"Job.Namespace", job.Namespace,
 		"Job.Name", job.Name,
 	)
-	err := CreateOrUpdate(r, r, ctx, job, &batchv1.Job{})
-	if err != nil {
-		log.Error(
-			err, "Failed to create new Job",
-			"Job.Namespace", job.Namespace,
-			"Job.Name", job.Name,
-		)
+	if err := CreateOrUpdate(r, r, ctx, log, job, &batchv1.Job{}); err != nil {
 		return nil, err
 	}
 
 	return job, nil
+}
+
+func volumePresentAlready(new string, volumes []corev1.Volume) bool {
+	for _, v := range volumes {
+		if v.Name == new {
+			return true
+		}
+	}
+	return false
 }
 
 func getVolume(volume string, readOnly bool) corev1.Volume {
@@ -198,10 +199,6 @@ func getVolumeMount(volume string, mountPath string) corev1.VolumeMount {
 		Name:      volume,
 		MountPath: mountPath,
 	}
-}
-
-func GetVolumeName(jobName string, stepId string) string {
-	return jobName + "-" + stepId
 }
 
 func getMountPath(stepId string) string {
