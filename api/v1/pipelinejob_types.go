@@ -66,11 +66,16 @@ type PipelineJobSpec struct {
 // ScheduleStatus defines the observed state of Schedule
 type PipelineJobStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	// +kubebuilder:validation:Optional
+	State *string `json:"state"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=pj,singular=pipelinejob
+//+kubebuilder:printcolumn:name="Step",type="string",JSONPath=`.spec.stepId`
+//+kubebuilder:printcolumn:name="Image",type="string",JSONPath=`.spec.jobSpec.image`
+//+kubebuilder:printcolumn:name="State",type="string",JSONPath=`.status.state`
 
 // Pipeline is the Schema for the pipelines API
 type PipelineJob struct {
