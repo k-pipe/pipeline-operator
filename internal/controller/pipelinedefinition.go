@@ -23,6 +23,6 @@ func GetPipelineDefinition(r client.Reader, ctx context.Context, name types.Name
 }
 
 // Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
-func (r *PipelineDefinitionReconciler) SetConfigMapCreatedStatus(ctx context.Context, pd *pipelinev1.PipelineDefinition, status metav1.ConditionStatus, message string) error {
-	return SetStatusCondition(r.Status(), ctx, pd, &pd.Status.Conditions, ConfigMapCreated, status, message)
+func (r *PipelineDefinitionReconciler) SetConfigMapCreatedStatus(ctx context.Context, log func(string, ...interface{}), pd *pipelinev1.PipelineDefinition, status metav1.ConditionStatus, message string) error {
+	return SetStatusCondition(r.Status(), ctx, log, pd, &pd.Status.Conditions, ConfigMapCreated, status, message)
 }

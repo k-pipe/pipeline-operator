@@ -2,14 +2,12 @@ package controller
 
 import (
 	"context"
+	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Gets a PersistentVolumeClaim object by name from api server, returns nil,nil if not found
@@ -25,8 +23,7 @@ func (r *PipelineRunReconciler) GetPersistentVolumeClaim(ctx context.Context, na
 /*
 create PersistentVolumeClaim
 */
-func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context, pr *pipelinev1.PipelineRun, volumeName string, sizeInGB int64) (*corev1.PersistentVolumeClaim, error) {
-	log := log.FromContext(ctx)
+func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, volumeName string, sizeInGB int64) (*corev1.PersistentVolumeClaim, error) {
 
 	// the labels to be attached to pvc
 	labels := map[string]string{
@@ -55,18 +52,12 @@ func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context,
 			StorageClassName: &storageClass,
 		},
 	}
-	if err := ctrl.SetControllerReference(pr, pr, r.Scheme); err != nil {
-		log.Error(err, "failed to set controller owner reference")
+	if err := ctrl.SetControllerReference(pr, &pvc, r.Scheme); err != nil {
 		return nil, err
 	}
 
-	err := CreateOrUpdate(r, r, ctx, &pvc, &corev1.PersistentVolumeClaim{})
+	err := CreateOrUpdate(r, r, ctx, log, &pvc, &corev1.PersistentVolumeClaim{})
 	if err != nil {
-		log.Error(
-			err, "Failed to create new PersistentVolumeClaim: "+pvc.Name,
-			"PersistentVolumeClaim.Namespace", pvc.Namespace,
-			"PersistentVolumeClaim.Name", pvc.Name,
-		)
 		return nil, err
 	}
 

@@ -2,14 +2,11 @@ package controller
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strconv"
-
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -39,37 +36,25 @@ func (r *PipelineJobReconciler) GetPipelineRun(ctx context.Context, name types.N
 }
 
 // Sets a status condition of the pipeline job
-func (r *PipelineJobReconciler) SetPipelineJobStatus(ctx context.Context, pj *pipelinev1.PipelineJob, statusType string, status metav1.ConditionStatus, message string) error {
-	return SetStatusCondition(r.Status(), ctx, pj, &pj.Status.Conditions, statusType, status, message)
+func (r *PipelineJobReconciler) SetPipelineJobStatus(ctx context.Context, log func(string, ...interface{}), pj *pipelinev1.PipelineJob, statusType string, status metav1.ConditionStatus, message string) error {
+	return SetStatusCondition(r.Status(), ctx, log, pj, &pj.Status.Conditions, statusType, status, message)
 }
 
 /*
 create PipelineJob provided spec
 */
-func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipelinev1.PipelineRun, spec *pipelinev1.PipelineJobStepSpec) error {
-	log := log.FromContext(ctx)
-	// the labels to be attached to the pod
-	jobName := pr.Name + "-" + spec.Id
-
+func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, jobName string, spec *pipelinev1.PipelineJobStepSpec) error {
 	stepId := spec.Id
 	// create the input volume names
 	var inputs []pipelinev1.InputPipe
 	for _, pipe := range pr.Status.PipelineStructure.Pipes {
 		if pipe.To.StepId == stepId {
 			inputs = append(inputs, pipelinev1.InputPipe{
-				Volume:     GetVolumeName(jobName, pipe.From.StepId),
+				Volume:     r.ConstructPipelineJobName(pr, pipe.From.StepId),
 				MountPath:  getMountPath(pipe.From.StepId),
 				SourceFile: pipe.From.Name,
 				TargetFile: pipe.To.Name,
 			})
-		}
-	}
-
-	// create the output pipes names
-	var outputPipes []string
-	for i, pipe := range pr.Status.PipelineStructure.Pipes {
-		if pipe.From.StepId == spec.Id {
-			outputPipes = append(outputPipes, pr.Name+"-"+strconv.Itoa(i))
 		}
 	}
 
@@ -97,31 +82,15 @@ func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, pr *pipel
 			StepId:      spec.Id,
 		},
 	}
-
 	// Set the ownerRef for the PipelineJob
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(pr, pj, r.Scheme); err != nil {
-		log.Error(err, "failed to set controller owner reference")
 		return err
 	}
 
 	// create the cronjob
-	log.Info(
-		"Creating a new PipelineJob",
-		"PipelineJob.Namespace", pj.Namespace,
-		"PipelineJob.Name", pj.Name,
-	)
-	err := CreateOrUpdate(r, r, ctx, pj, &pipelinev1.PipelineJob{})
-	if err != nil {
-		log.Error(
-			err, "Failed to create new PipelineJob",
-			"PipelineJob.Namespace", pj.Namespace,
-			"PipelineJob.Name", pj.Name,
-		)
-		return err
-	}
-
-	return nil
+	log("Creating a new PipelineJob", "PipelineJob.Namespace", pj.Namespace, "PipelineJob.Name", pj.Name)
+	return CreateOrUpdate(r, r, ctx, log, pj, &pipelinev1.PipelineJob{})
 }
 
 func isTrueInPipelineJob(j *pipelinev1.PipelineJob, condition string) bool {

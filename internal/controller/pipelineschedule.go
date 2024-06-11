@@ -24,8 +24,8 @@ func (r *PipelineScheduleReconciler) GetPipelineSchedule(ctx context.Context, na
 }
 
 // Sets the status condition of the pipeline schedule to available initially, i.e. if no condition exists yet.
-func (r *PipelineScheduleReconciler) SetUpToDateStatus(ctx context.Context, ps *pipelinev1.PipelineSchedule, status metav1.ConditionStatus, message string) error {
-	return SetStatusCondition(r.Status(), ctx, ps, &ps.Status.Conditions, UpToDate, status, message)
+func (r *PipelineScheduleReconciler) SetUpToDateStatus(ctx context.Context, log func(string, ...interface{}), ps *pipelinev1.PipelineSchedule, status metav1.ConditionStatus, message string) error {
+	return SetStatusCondition(r.Status(), ctx, log, ps, &ps.Status.Conditions, UpToDate, status, message)
 }
 
 // Get the expected ScheduleInRange depending on the current time, returns nil if no ScheduleRange matches
@@ -33,7 +33,7 @@ func (r *PipelineScheduleReconciler) GetExpectedScheduleInRange(ctx context.Cont
 	if ps.Spec.Schedules != nil && len(ps.Spec.Schedules) != 0 {
 		now := time.Now()
 
-		//log.Info("determined current time", "time", now)
+		//log.Info(prefix + "determined current time", "time", now)
 
 		for _, r := range ps.Spec.Schedules {
 			if isBefore(now, r.Before) && isAfter(now, r.After) {

@@ -23,12 +23,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	"time"
 
+	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
 // TODO add validation webhook according to this: https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation
@@ -54,8 +52,8 @@ type PipelineScheduleReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-	//log.Info("Starting reconciliation (PipelineSchedule)")
+	log := Logger(ctx, req, "PS")
+	defer LoggingDone(log)
 
 	// TODO make this configurable!
 	requeue := ctrl.Result{RequeueAfter: time.Minute}
@@ -64,7 +62,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	ps, err := r.GetPipelineSchedule(ctx, req.NamespacedName)
 	if ps == nil {
 		// not found, this may happen when a resource is deleted, just end the reconciliation
-		log.Info("PipelineSchedule resource not found. Ignoring since object has been deleted")
+		log("PipelineSchedule resource not found. Ignoring since object has been deleted")
 		return requeue, nil
 	}
 	if err != nil {
@@ -88,20 +86,19 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	consistent, message := stateConsistent(sir, cj)
 	if consistent {
 		// is consistent, set "UpToDate" to true
-		if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, message); err != nil {
+		if err = r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, message); err != nil {
 			return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
 		}
 		// end reconcilition
-		//log.Info("Nothing to reconcile")
+		//log.Info(prefix + "Nothing to reconcile")
 		return requeue, nil
 	} else {
-		log.Info("========================= Started reconciliation (PipelineSchedule) =========================")
-		log.Info("Reason for reconciliation: " + message)
+		log("Reason for reconciliation: " + message)
 		// copy selected schedule in range data to status (for additionalPrinterColumns), this will be written together with UpToDateStatus
 		r.SetStatus(ps, sir)
 
 		// set UpToDate to false
-		if err := r.SetUpToDateStatus(ctx, ps, v1.ConditionFalse, message); err != nil {
+		if err := r.SetUpToDateStatus(ctx, log, ps, v1.ConditionFalse, message); err != nil {
 			return failed("Failed to clear UpToDateStatus", ps, r.Recorder), err
 		}
 	}
@@ -109,15 +106,15 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// if no schedule in range, delete cronjob
 	var event string
 	if sir == nil {
-		log.Info("No schedule in current time range expected, deleting CronJob")
-		if err := r.DeleteCronJob(ctx, cj); err != nil {
+		log("No schedule in current time range expected, deleting CronJob")
+		if err := r.DeleteCronJob(ctx, log, cj); err != nil {
 			return failed("Failed to delete CronJob", ps, r.Recorder), err
 		}
 		event = "CronJob has been deleted"
 	} else {
 		// if no cronjob exists, create one
 		if cj == nil {
-			if err := r.CreateCronJob(ctx, ps, *sir); err != nil {
+			if err := r.CreateCronJob(ctx, log, ps, *sir); err != nil {
 				return failed("Failed to create CronJob", ps, r.Recorder), err
 			}
 			event = "CronJob has been created"
@@ -139,12 +136,10 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// set UpToDate status
-	if err = r.SetUpToDateStatus(ctx, ps, v1.ConditionTrue, event); err != nil {
+	if err = r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, event); err != nil {
 		return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
 	}
-	log.Info("========================= Terminated reconciliation (PipelineSchedule) =========================")
 
-	log.Info("Done with reconciliation")
 	return requeue, nil
 }
 

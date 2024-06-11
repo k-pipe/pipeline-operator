@@ -29,16 +29,16 @@ func NotExistsResource(r client.Reader, ctx context.Context, resource client.Obj
 	return false, err
 }
 
-// Sets the status condition of a resource. The resource's status conditions array is also passed as argument
-func SetStatusCondition(writer client.SubResourceWriter, ctx context.Context, resource client.Object, statusConditions *[]metav1.Condition, statusType string, status metav1.ConditionStatus, message string) error {
-	log := log.FromContext(ctx)
+const LOG_WIDTH = 80
 
+// Sets the status condition of a resource. The resource's status conditions array is also passed as argument
+func SetStatusCondition(writer client.SubResourceWriter, ctx context.Context, log func(string, ...interface{}), resource client.Object, statusConditions *[]metav1.Condition, statusType string, status metav1.ConditionStatus, message string) error {
 	if (statusConditions != nil) && meta.IsStatusConditionPresentAndEqual(*statusConditions, statusType, status) {
 		// no change in status
 		return nil
 	}
 
-	log.Info("Updating status " + statusType + " to " + string(status))
+	log("Updating status " + statusType + " to " + string(status))
 
 	// set the status condition
 	meta.SetStatusCondition(
@@ -51,27 +51,55 @@ func SetStatusCondition(writer client.SubResourceWriter, ctx context.Context, re
 		},
 	)
 
-	if err := writer.Update(ctx, resource); err != nil {
-		log.Error(err, "Failed to update status "+statusType+" to "+string(status))
-		return err
-	}
-	return nil
+	return writer.Update(ctx, resource)
 }
 
 func NameSpacedName(resource client.Object) types.NamespacedName {
 	return types.NamespacedName{Name: resource.GetName(), Namespace: resource.GetNamespace()}
 }
 
-func CreateOrUpdate(r client.Reader, w client.Writer, ctx context.Context, resource client.Object, empty client.Object) error {
+func CreateOrUpdate(r client.Reader, w client.Writer, ctx context.Context, log func(string, ...interface{}), resource client.Object, empty client.Object) error {
 	notExist, err := NotExistsResource(r, ctx, empty, NameSpacedName(resource))
 	if err != nil {
 		return err
 	}
 	if !notExist {
-		log.FromContext(ctx).Info("Deleting existing resource: " + resource.GetName())
+		log("Deleting existing resource: " + resource.GetName())
 		if err := w.Delete(ctx, empty); err != nil {
 			return err
 		}
 	}
 	return w.Create(ctx, resource)
+}
+
+func Logger(ctx context.Context, req ctrl.Request, prefix string) func(string, ...interface{}) {
+	l := log.FromContext(ctx)
+	res := func(message string, keysAndValues ...interface{}) {
+		line := "[" + prefix + "]    " + message
+		l.Info(line+repeat(" ", min0(LOG_WIDTH-len(line))), keysAndValues...)
+	}
+	res(repeat(",", LOG_WIDTH-6-len(prefix)))
+	name := req.Namespace + ":" + req.Name
+	res(repeat(" ", min0((LOG_WIDTH-len(name)-6-len(prefix))/2)) + name)
+	return res
+}
+
+func min0(i int) int {
+	if i > 0 {
+		return i
+	} else {
+		return 0
+	}
+}
+
+func LoggingDone(log func(string, ...interface{})) {
+	log(repeat("'", LOG_WIDTH-8))
+}
+
+func repeat(s string, num int) string {
+	res := ""
+	for i := 0; i < num; i++ {
+		res = res + s
+	}
+	return res
 }

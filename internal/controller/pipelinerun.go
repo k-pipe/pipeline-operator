@@ -28,13 +28,13 @@ func (r *PipelineRunReconciler) GetPipelineRun(ctx context.Context, name types.N
 }
 
 // Sets status condition of the pipeline run (from PipelineRun reconciliation)
-func (r *PipelineRunReconciler) SetPipelineRunStatus(ctx context.Context, pr *pipelinev1.PipelineRun, statusType string, status metav1.ConditionStatus, message string) error {
-	return SetStatusCondition(r.Status(), ctx, pr, &pr.Status.Conditions, statusType, status, message)
+func (r *PipelineRunReconciler) SetPipelineRunStatus(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, statusType string, status metav1.ConditionStatus, message string) error {
+	return SetStatusCondition(r.Status(), ctx, log, pr, &pr.Status.Conditions, statusType, status, message)
 }
 
 // Sets status condition of the pipeline run (from PipelineJob reconciliation)
-func (r *PipelineJobReconciler) SetPipelineRunStatus(ctx context.Context, pr *pipelinev1.PipelineRun, statusType string, status metav1.ConditionStatus, message string) error {
-	return SetStatusCondition(r.Status(), ctx, pr, &pr.Status.Conditions, statusType, status, message)
+func (r *PipelineJobReconciler) SetPipelineRunStatus(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, statusType string, status metav1.ConditionStatus, message string) error {
+	return SetStatusCondition(r.Status(), ctx, log, pr, &pr.Status.Conditions, statusType, status, message)
 }
 
 func (r *PipelineRunReconciler) DeterminePipelineVersion(ctx context.Context, pr *pipelinev1.PipelineRun) error {

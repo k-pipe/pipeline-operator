@@ -32,8 +32,7 @@ func (r *PipelineScheduleReconciler) GetCronJob(ctx context.Context, name types.
 /*
 create cronjob object according to provided schedule in range
 */
-func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, schedule *pipelinev1.PipelineSchedule, sir pipelinev1.ScheduleInRange) error {
-	log := log.FromContext(ctx)
+func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, log func(string, ...interface{}), schedule *pipelinev1.PipelineSchedule, sir pipelinev1.ScheduleInRange) error {
 
 	// the labels to be attached to cron job
 	cjLabels := map[string]string{
@@ -97,49 +96,30 @@ func (r *PipelineScheduleReconciler) CreateCronJob(ctx context.Context, schedule
 	// Set the ownerRef for the CronJob
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(schedule, cj, r.Scheme); err != nil {
-		log.Error(err, "failed to set controller owner reference")
 		return err
 	}
 
 	// create the cronjob
-	log.Info(
+	log(
 		"Creating a new Cronjob",
 		"CronJob.Namespace", cj.Namespace,
 		"CronJob.Name", cj.Name,
 	)
-	err := CreateOrUpdate(r, r, ctx, cj, &batchv1.CronJob{})
-	if err != nil {
-		log.Error(
-			err, "Failed to create new CronJob",
-			"CronJob.Namespace", schedule.Namespace,
-			"CronJob.Name", schedule.Name,
-		)
-	}
-
-	return nil
+	return CreateOrUpdate(r, r, ctx, log, cj, &batchv1.CronJob{})
 }
 
 func (r *PipelineScheduleReconciler) DeleteCronJob(
 	ctx context.Context,
+	log func(string, ...interface{}),
 	cj *batchv1.CronJob,
 ) error {
-	log := log.FromContext(ctx)
-
-	log.Info(
+	log(
 		"Deleting the Cronjob",
 		"CronJob.Namespace", cj.Namespace,
 		"CronJob.Name", cj.Name,
 	)
 
-	err := r.Delete(ctx, cj)
-	if err != nil {
-		log.Error(
-			err, "Failed to delete CronJob",
-			"CronJob.Namespace", cj.Namespace,
-			"CronJob.Name", cj.Name,
-		)
-	}
-	return err
+	return r.Delete(ctx, cj)
 }
 
 func (r *PipelineScheduleReconciler) UpdateCronJob(
