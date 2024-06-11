@@ -21,6 +21,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"time"
 
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
@@ -67,19 +68,19 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if err != nil {
 		// any other error will be logged
-		return failed("Failed to get PipelineSchedule", ps, r.Recorder), err
+		return r.failed(ctx, "Failed to get PipelineSchedule", ps, r.Recorder), err
 	}
 
 	// determine which schedule is expected (this depends on current time)
 	sir, err := r.GetExpectedScheduleInRange(ctx, *ps)
 	if err != nil {
-		return failed("Failed to determine expected schedule", ps, r.Recorder), err
+		return r.failed(ctx, "Failed to determine expected schedule", ps, r.Recorder), err
 	}
 
 	// get the cronjob with identical name
 	cj, err := r.GetCronJob(ctx, req.NamespacedName)
 	if err != nil {
-		return failed("Failed to get cronjob from API", ps, r.Recorder), err
+		return r.failed(ctx, "Failed to get cronjob from API", ps, r.Recorder), err
 	}
 
 	// if state is consistent with expectation, end conciliation
@@ -87,7 +88,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if consistent {
 		// is consistent, set "UpToDate" to true
 		if err = r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, message); err != nil {
-			return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
+			return r.failed(ctx, "Failed to set UpToDateStatus", ps, r.Recorder), err
 		}
 		// end reconcilition
 		//log.Info(prefix + "Nothing to reconcile")
@@ -99,7 +100,7 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		// set UpToDate to false
 		if err := r.SetUpToDateStatus(ctx, log, ps, v1.ConditionFalse, message); err != nil {
-			return failed("Failed to clear UpToDateStatus", ps, r.Recorder), err
+			return r.failed(ctx, "Failed to clear UpToDateStatus", ps, r.Recorder), err
 		}
 	}
 
@@ -108,20 +109,20 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if sir == nil {
 		log("No schedule in current time range expected, deleting CronJob")
 		if err := r.DeleteCronJob(ctx, log, cj); err != nil {
-			return failed("Failed to delete CronJob", ps, r.Recorder), err
+			return r.failed(ctx, "Failed to delete CronJob", ps, r.Recorder), err
 		}
 		event = "CronJob has been deleted"
 	} else {
 		// if no cronjob exists, create one
 		if cj == nil {
 			if err := r.CreateCronJob(ctx, log, ps, *sir); err != nil {
-				return failed("Failed to create CronJob", ps, r.Recorder), err
+				return r.failed(ctx, "Failed to create CronJob", ps, r.Recorder), err
 			}
 			event = "CronJob has been created"
 		} else {
 			// update existing cronjob with new schedule in range
 			if err := r.UpdateCronJob(ctx, *sir, cj); err != nil {
-				return failed("Failed to update CronJob", ps, r.Recorder), err
+				return r.failed(ctx, "Failed to update CronJob", ps, r.Recorder), err
 			}
 			event = "CronJob has been updated"
 		}
@@ -132,12 +133,12 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// refetch the pipeline schedule object
 	if err := r.Get(ctx, NameSpacedName(ps), ps); err != nil {
-		return failed("Failed to re-fetch PipelineSchedule", ps, r.Recorder), err
+		return r.failed(ctx, "Failed to re-fetch PipelineSchedule", ps, r.Recorder), err
 	}
 
 	// set UpToDate status
 	if err = r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, event); err != nil {
-		return failed("Failed to set UpToDateStatus", ps, r.Recorder), err
+		return r.failed(ctx, "Failed to set UpToDateStatus", ps, r.Recorder), err
 	}
 
 	return requeue, nil
@@ -184,4 +185,13 @@ func (r *PipelineScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&pipelinev1.PipelineSchedule{}).
 		Owns(&batchv1.CronJob{}).
 		Complete(r)
+}
+
+// called whenever an error occurred, to create an error event
+func (r *PipelineScheduleReconciler) failed(ctx context.Context, errormessage string, pj *pipelinev1.PipelineSchedule, recorder record.EventRecorder) ctrl.Result {
+	if err := r.Status().Update(ctx, pj); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to update state to "+errormessage)
+	}
+	recorder.Event(pj, "Warning", "ReconciliationError", errormessage)
+	return ctrl.Result{}
 }
