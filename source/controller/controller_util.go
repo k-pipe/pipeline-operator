@@ -5,19 +5,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-// called whenever an error occurred, to create an error event
-func failed(errormessage string, object runtime.Object, r record.EventRecorder) ctrl.Result {
-	r.Event(object, "Warning", "ReconciliationError", errormessage)
-	return ctrl.Result{}
-}
 
 // gets a resource, returns bool indication if not found or not, error is nil in case that object was not found
 func NotExistsResource(r client.Reader, ctx context.Context, resource client.Object, name types.NamespacedName) (bool, error) {
@@ -63,13 +55,13 @@ func CreateOrUpdate(r client.Reader, w client.Writer, ctx context.Context, log f
 	if err != nil {
 		return err
 	}
-	if !notExist {
-		log("Deleting existing resource: " + resource.GetName())
-		if err := w.Delete(ctx, empty); err != nil {
-			return err
-		}
+	if notExist {
+		log("Creating resource: " + resource.GetName())
+		return w.Create(ctx, resource)
+	} else {
+		log("Updating existing resource: " + resource.GetName())
+		return w.Update(ctx, resource)
 	}
-	return w.Create(ctx, resource)
 }
 
 func Logger(ctx context.Context, req ctrl.Request, prefix string) func(string, ...interface{}) {

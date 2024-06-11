@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -55,38 +56,84 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	log := Logger(ctx, req, "PJ")
 	defer LoggingDone(log)
 
-	// get the pipeline run by name from request
-	pj, err := r.GetPipelineJob(ctx, req.NamespacedName)
-	if pj == nil {
-		// not found, this may happen when a resource is deleted, just end the reconciliation
-		log("PipelineJob resource not found. Ignoring since object has been deleted")
-		return ctrl.Result{}, nil
-	}
-	if err != nil {
-		// any other error will be logged
-		return failed("Failed to get PipelineJob", pj, r.Recorder), err
+	// get the pipeline job by name from request
+	pj, result, err := r.loadResource(ctx, log, req.NamespacedName)
+	if result != nil {
+		return *result, err
 	}
 
 	// create job if it does not exist, yet
 	j, err := r.GetJob(ctx, req.NamespacedName)
+	if err != nil {
+		return r.failed(ctx, "Failed to get PipelineJob", pj, r.Recorder), err
+	}
 	if j == nil {
-		log("Creating Job resource")
-		j, err = r.CreateJob(ctx, log, pj)
-		if err != nil {
-			// any other error will be logged
-			return failed("Failed to create Job", j, r.Recorder), err
-		}
+		return r.createJob(ctx, log, pj)
+	}
 
-		if r.SetPipelineJobStatus(ctx, log, pj, JobCreated, metav1.ConditionTrue, "Created Job: "+j.Name) != nil {
-			return failed("Failed to create Job: "+j.Name, j, r.Recorder), err
-		}
-		r.Recorder.Event(pj, "Normal", "Reconciliation", "Created Job: "+j.Name)
+	// update job status if changed
+	result, err = r.updatedJobStatus(ctx, log, pj, j)
+	if result != nil {
+		return *result, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *PipelineJobReconciler) createJob(ctx context.Context, log func(string, ...interface{}), pj *pipelinev1.PipelineJob) (ctrl.Result, error) {
+	j, err := r.CreateJob(ctx, log, pj)
+	if err != nil {
+		return r.failed(ctx, "Failed to create Job", pj, r.Recorder), err
+	}
+
+	state := "Job created"
+	pj.Status.State = &state
+	if r.SetPipelineJobStatus(ctx, log, pj, JobCreated, metav1.ConditionTrue, "Created Job: "+j.Name) != nil {
+		return r.failed(ctx, "Failed to set JobCreated status: "+j.Name, pj, r.Recorder), err
+	}
+	r.Recorder.Event(pj, "Normal", "Reconciliation", "Created Job: "+j.Name)
+
+	// changes to state have been made, return empty result to stop current reconciliation iteration
+	return ctrl.Result{}, nil
+}
+
+func (r *PipelineJobReconciler) loadResource(ctx context.Context, log func(string, ...interface{}), name types.NamespacedName) (*pipelinev1.PipelineJob, *ctrl.Result, error) {
+	pj, err := r.GetPipelineJob(ctx, name)
+	if pj == nil {
+		// not found, this may happen when a resource is deleted, just end the reconciliation
+		log("PipelineJob resource not found. Ignoring since object has been deleted")
+		return nil, &ctrl.Result{}, nil
 	}
 	if err != nil {
 		// any other error will be logged
-		return failed("Failed to get PipelineJob", pj, r.Recorder), err
+		res := r.failed(ctx, "Failed to get PipelineJob", pj, r.Recorder)
+		return nil, &res, err
 	}
+	// return nil result to indicate that reconciliation can proceed
+	return pj, nil, nil
+}
 
+// SetupWithManager sets up the controller with the Manager.
+func (r *PipelineJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("pipeline-controller")
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&pipelinev1.PipelineJob{}).
+		Owns(&batchv1.Job{}).
+		Complete(r)
+}
+
+// called whenever an error occurred, to create an error event
+func (r *PipelineJobReconciler) failed(ctx context.Context, errormessage string, pj *pipelinev1.PipelineJob, recorder record.EventRecorder) ctrl.Result {
+	errState := "Error (" + errormessage + ")"
+	pj.Status.State = &errState
+	if err := r.Status().Update(ctx, pj); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to update state to "+errormessage)
+	}
+	recorder.Event(pj, "Warning", "ReconciliationError", errormessage)
+	return ctrl.Result{}
+}
+
+func (r *PipelineJobReconciler) updatedJobStatus(ctx context.Context, log func(string, ...interface{}), pj *pipelinev1.PipelineJob, j *batchv1.Job) (*ctrl.Result, error) {
 	// collect the job status into one variable
 	newSucceededState := metav1.ConditionUnknown
 
@@ -113,27 +160,31 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// first set on PipelineRun (to make sure to retry this in case it fails)
 		pr, err := r.GetPipelineRun(ctx, types.NamespacedName{Name: pj.Spec.PipelineRun, Namespace: pj.Namespace})
 		if err != nil || pr == nil {
-			return failed("Failed to get PipelineRun resource for updating JobSucceeded status", j, r.Recorder), err
+			res := r.failed(ctx, "Failed to get PipelineRun resource for updating JobSucceeded status", pj, r.Recorder)
+			return &res, err
 		}
 		r.SetPipelineRunStatus(ctx, log, pr, StepStatus(pj.Spec.StepId), newSucceededState, message)
 
-		// last set it on PipelineJob
+		// then set it on PipelineJob
+		var state string
+		switch newSucceededState {
+		case metav1.ConditionTrue:
+			state = "Done"
+		case metav1.ConditionFalse:
+			state = "Failed"
+		case metav1.ConditionUnknown:
+			state = "Created"
+		}
+		pj.Status.State = &state
 		if r.SetPipelineJobStatus(ctx, log, pj, JobSucceeded, newSucceededState, message) != nil {
-			return failed("Failed to set PipelineJob succeeded status", j, r.Recorder), err
+			res := r.failed(ctx, "Failed to set PipelineJob succeeded status", pj, r.Recorder)
+			return &res, err
 		}
 
 		// finally record an event if successful
 		r.Recorder.Event(pj, "Normal", "Reconciliation", message)
 	}
 
-	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *PipelineJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("pipeline-controller")
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&pipelinev1.PipelineJob{}).
-		Owns(&batchv1.Job{}).
-		Complete(r)
+	// return nil result to indicate that reconciliation can proceed
+	return nil, nil
 }
