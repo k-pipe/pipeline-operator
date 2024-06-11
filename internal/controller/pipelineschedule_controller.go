@@ -19,7 +19,9 @@ package controller
 import (
 	"context"
 	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"time"
@@ -60,15 +62,9 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	requeue := ctrl.Result{RequeueAfter: time.Minute}
 
 	// get the pipeline schedule by name from request
-	ps, err := r.GetPipelineSchedule(ctx, req.NamespacedName)
-	if ps == nil {
-		// not found, this may happen when a resource is deleted, just end the reconciliation
-		log("PipelineSchedule resource not found. Ignoring since object has been deleted")
-		return requeue, nil
-	}
-	if err != nil {
-		// any other error will be logged
-		return r.failed(ctx, "Failed to get PipelineSchedule", ps, r.Recorder), err
+	ps, result, err := r.loadResource(ctx, log, req.NamespacedName)
+	if result != nil {
+		return *result, err
 	}
 
 	// determine which schedule is expected (this depends on current time)
@@ -83,65 +79,78 @@ func (r *PipelineScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return r.failed(ctx, "Failed to get cronjob from API", ps, r.Recorder), err
 	}
 
-	// if state is consistent with expectation, end conciliation
+	// check consistency between actual and desired state
 	consistent, message := stateConsistent(sir, cj)
-	if consistent {
-		// is consistent, set "UpToDate" to true
-		if err = r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, message); err != nil {
-			return r.failed(ctx, "Failed to set UpToDateStatus", ps, r.Recorder), err
-		}
-		// end reconcilition
-		//log.Info(prefix + "Nothing to reconcile")
-		return requeue, nil
-	} else {
-		log("Reason for reconciliation: " + message)
-		// copy selected schedule in range data to status (for additionalPrinterColumns), this will be written together with UpToDateStatus
-		r.SetStatus(ps, sir)
 
-		// set UpToDate to false
-		if err := r.SetUpToDateStatus(ctx, log, ps, v1.ConditionFalse, message); err != nil {
-			return r.failed(ctx, "Failed to clear UpToDateStatus", ps, r.Recorder), err
+	// if upToDate is set, check if that is still justified
+	if meta.IsStatusConditionTrue(ps.Status.Conditions, UpToDate) {
+		// if expected and actual cron job match
+		if consistent {
+			// end reconciliation, returning specified reschedule interval
+			return requeue, nil
+		} else {
+			log("Not any longer up to date: " + message)
+			// set UpToDate to false
+			if err := r.SetUpToDateStatus(ctx, log, ps, v1.ConditionFalse, message); err != nil {
+				return r.failed(ctx, "Failed to clear UpToDateStatus", ps, r.Recorder), err
+			}
+			// register an event for the executed action
+			r.Recorder.Event(ps, "Normal", "Reconciliation", message)
+
+			// update state will trigger immediate reschedule, so return empty result
+			return ctrl.Result{}, nil
 		}
 	}
+
+	// upToDate is not set, synchronize
+	if message, err := r.reconileCronJob(ctx, log, ps, sir, cj); err != nil {
+		return r.failed(ctx, message, ps, r.Recorder), err
+	} else {
+		// after successful reconiliation, reschedule with specified interval
+		return requeue, nil
+	}
+}
+
+func (r *PipelineScheduleReconciler) reconileCronJob(ctx context.Context, log func(string, ...interface{}), ps *pipelinev1.PipelineSchedule, sir *pipelinev1.ScheduleInRange, cj *batchv1.CronJob) (string, error) {
+	log("State is marked as not up to date, reconciling")
+
+	// copy selected schedule in range data to status (for additionalPrinterColumns), this will be written together with UpToDateStatus
+	r.SetStatus(ps, sir)
 
 	// if no schedule in range, delete cronjob
 	var event string
 	if sir == nil {
 		log("No schedule in current time range expected, deleting CronJob")
 		if err := r.DeleteCronJob(ctx, log, cj); err != nil {
-			return r.failed(ctx, "Failed to delete CronJob", ps, r.Recorder), err
+			return "Failed to delete CronJob", err
 		}
 		event = "CronJob has been deleted"
 	} else {
 		// if no cronjob exists, create one
 		if cj == nil {
 			if err := r.CreateCronJob(ctx, log, ps, *sir); err != nil {
-				return r.failed(ctx, "Failed to create CronJob", ps, r.Recorder), err
+				return "Failed to create CronJob", err
 			}
 			event = "CronJob has been created"
 		} else {
 			// update existing cronjob with new schedule in range
 			if err := r.UpdateCronJob(ctx, *sir, cj); err != nil {
-				return r.failed(ctx, "Failed to update CronJob", ps, r.Recorder), err
+				return "Failed to update CronJob", err
 			}
 			event = "CronJob has been updated"
 		}
 	}
 
 	// register an event for the executed action
-	r.Recorder.Event(ps, "Normal", "Reconciliation", event+" ("+message+")")
-
-	// refetch the pipeline schedule object
-	if err := r.Get(ctx, NameSpacedName(ps), ps); err != nil {
-		return r.failed(ctx, "Failed to re-fetch PipelineSchedule", ps, r.Recorder), err
-	}
+	r.Recorder.Event(ps, "Normal", "Reconciliation", event)
 
 	// set UpToDate status
-	if err = r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, event); err != nil {
-		return r.failed(ctx, "Failed to set UpToDateStatus", ps, r.Recorder), err
+	if err := r.SetUpToDateStatus(ctx, log, ps, v1.ConditionTrue, event); err != nil {
+		return "Failed to set UpToDateStatus", err
 	}
 
-	return requeue, nil
+	// successful reconciliation
+	return "", nil
 }
 
 // determine if given ScheduleInRange is consistent with CronJob
@@ -194,4 +203,20 @@ func (r *PipelineScheduleReconciler) failed(ctx context.Context, errormessage st
 	}
 	recorder.Event(pj, "Warning", "ReconciliationError", errormessage)
 	return ctrl.Result{}
+}
+
+func (r *PipelineScheduleReconciler) loadResource(ctx context.Context, log func(string, ...interface{}), name types.NamespacedName) (*pipelinev1.PipelineSchedule, *ctrl.Result, error) {
+	ps, err := r.GetPipelineSchedule(ctx, name)
+	if ps == nil {
+		// not found, this may happen when a resource is deleted, just end the reconciliation
+		log("PipelineSchedule resource not found. Ignoring since object has been deleted")
+		return nil, &ctrl.Result{}, nil
+	}
+	if err != nil {
+		// any other error will be logged
+		res := r.failed(ctx, "Failed to get PipelineSchedule", ps, r.Recorder)
+		return nil, &res, err
+	}
+	// return nil result to indicate that reconciliation can proceed
+	return ps, nil, nil
 }
