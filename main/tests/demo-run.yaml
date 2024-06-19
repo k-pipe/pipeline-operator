@@ -1,8 +1,8 @@
 apiVersion: pipeline.k-pipe.cloud/v1
 kind: PipelineRun
 metadata:
-...
+  name: "demo-run"
 spec:
-  pipelineName: "test-pipeline"
+  pipelineName: "demo-pipeline"
   versionPattern: "1.0.0"
   inputPipes: []

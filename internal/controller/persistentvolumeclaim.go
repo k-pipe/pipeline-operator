@@ -34,6 +34,7 @@ func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context,
 		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
 	}
 
+	//storageClass := "standard-rwo"
 	storageClass := "standard"
 	size := resource.NewQuantity(sizeInGB*(1<<30), resource.BinarySI)
 	pvc := corev1.PersistentVolumeClaim{
@@ -43,7 +44,7 @@ func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context,
 			Labels:    labels,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce, corev1.ReadOnlyMany},
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce /*, corev1.ReadOnlyMany*/},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: *size,

@@ -1,0 +1,15 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineRun
+metadata:
+  labels:
+    app.kubernetes.io/name: return-forecast
+    app.kubernetes.io/instance: return-forecast
+    app.kubernetes.io/part-of: kpipe
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kpipe
+  name: return-forecast-2
+  namespace: k-pipe
+spec:
+  pipelineName: "return-forecast"
+  versionPattern: "1.0.0"
+  inputPipes: []

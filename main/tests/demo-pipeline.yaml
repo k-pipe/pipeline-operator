@@ -1,0 +1,26 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineDefinition
+metadata:
+  name: "demo-pipeline-1.0.0"
+spec:
+  name: "demo-pipeline"
+  version: "0.0.1"
+  pipelineStructure:
+    jobSteps:
+    - id: stepa
+      jobSpec:
+        image: busybox
+        imagePullPolicy: IfNotPresent
+    - id: stepb
+      jobSpec:
+        image: busybox
+        imagePullPolicy: IfNotPresent
+    pipes:
+    - from:
+        stepId: stepa
+        name: name1
+      to:
+        stepId: stepb
+        name: name2
+
+
