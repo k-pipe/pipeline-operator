@@ -75,7 +75,7 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if result, err = r.updatedJobStatus(ctx, log, pj, j); result != nil {
 		return *result, err
 	}
-
+	log("End of reconcile")
 	return ctrl.Result{}, nil
 }
 
@@ -182,6 +182,9 @@ func (r *PipelineJobReconciler) updatedJobStatus(ctx context.Context, log func(s
 
 		// finally record an event if successful
 		r.Recorder.Event(pj, "Normal", "Reconciliation", message)
+
+		res := ctrl.Result{}
+		return &res, nil
 	}
 
 	// return nil result to indicate that reconciliation can proceed

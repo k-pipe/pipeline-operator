@@ -5,9 +5,11 @@ import (
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"strings"
 )
 
 // Gets a pipeline job object by name from api server, returns nil,nil if not found
@@ -49,23 +51,53 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 	var resources corev1.ResourceRequirements
 	terminationMessagePath := "/dev/termination-log" // TODO use this
 
-	// collect inputs
+	// variables to collect information about volumes
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
+	initCommands := ""
+
+	// settings working directory
+	var sizeInGB int64 = 1
+	workdirPath := "/workdir"
+	workdirVolumeName := "workdir"
+	workdirVolume := corev1.Volume{
+		Name: workdirVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{
+				Medium:    "",
+				SizeLimit: resource.NewQuantity(sizeInGB*(1<<30), resource.BinarySI),
+			},
+		},
+	}
+	volumes = append(volumes, workdirVolume)
+	volumeMounts = append(volumeMounts, getVolumeMount(workdirVolumeName, workdirPath))
+	addInitCommand(&initCommands, "mkdir", "input")
+
+	// collect settings for inputs
 	for _, in := range pj.Spec.Inputs {
 		if !volumePresentAlready(in.Volume, volumes) {
 			volumes = append(volumes, getVolume(in.Volume, true))
 			volumeMounts = append(volumeMounts, getVolumeMount(in.Volume, in.MountPath))
+			addInitCommand(&initCommands, "ln", "-s", in.MountPath+"/"+in.SourceFile, "/workdir/input/"+in.TargetFile)
 		}
 	}
 	// add output volume for the step
 	stepId := pj.Spec.StepId
 	volume := jobName // volume and volume claim get same name as job from which the data comes
 	volumes = append(volumes, getVolume(volume, false))
-	volumeMounts = append(volumeMounts, getVolumeMount(volume, getMountPath(stepId)))
+	outMountPath := getMountPath(stepId)
+	volumeMounts = append(volumeMounts, getVolumeMount(volume, outMountPath))
+	addInitCommand(&initCommands, "ln", "-s", outMountPath, "output")
+	addInitCommand(&initCommands, "echo", "Initialization", "done")
+
+	// add local workdir volume
+	//stepId := pj.Spec.StepId
+	//volume := jobName // volume and volume claim get same name as job from which the data comes
+	//volumes = append(volumes, getVolume(volume, false))
+	//volumeMounts = append(volumeMounts, getVolumeMount(volume, getMountPath(stepId)))
 
 	jobContainer := corev1.Container{
-		Name:                     jobName,
+		Name:                     "main",
 		Image:                    pj.Spec.JobSpec.Image,
 		Command:                  pj.Spec.JobSpec.Command,
 		Args:                     pj.Spec.JobSpec.Args,
@@ -85,10 +117,22 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 		TerminationMessagePath:   terminationMessagePath, // TODO use this!
 		TerminationMessagePolicy: "File",                 // TODO
 		ImagePullPolicy:          pj.Spec.JobSpec.ImagePullPolicy,
-		SecurityContext:          nil, // TODO !!!
-		Stdin:                    false,
+		SecurityContext:          nil,   // TODO !!!
+		Stdin:                    false, // TODO is this security critical?
 		StdinOnce:                false,
-		TTY:                      false,
+		TTY:                      false, // TODO is this security critical?
+	}
+
+	shellImage := "bash"
+	shellCommand := "bash"
+	initContainer := corev1.Container{
+		Name:            "init",
+		Image:           shellImage,
+		Command:         []string{shellCommand},
+		Args:            []string{"-c", initCommands},
+		WorkingDir:      workdirPath,
+		VolumeMounts:    volumeMounts,
+		ImagePullPolicy: pj.Spec.JobSpec.ImagePullPolicy,
 	}
 	// define the job object
 	job := &batchv1.Job{
@@ -112,7 +156,7 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 				},
 				Spec: corev1.PodSpec{
 					Volumes:                       volumes,
-					InitContainers:                []corev1.Container{},
+					InitContainers:                []corev1.Container{initContainer},
 					Containers:                    []corev1.Container{jobContainer},
 					EphemeralContainers:           nil,
 					RestartPolicy:                 corev1.RestartPolicyOnFailure,
@@ -171,6 +215,13 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 	}
 
 	return job, nil
+}
+
+func addInitCommand(commands *string, command ...string) {
+	if len(*commands) != 0 {
+		*commands = *commands + " && "
+	}
+	*commands = *commands + strings.Join(command, " ")
 }
 
 func volumePresentAlready(new string, volumes []corev1.Volume) bool {

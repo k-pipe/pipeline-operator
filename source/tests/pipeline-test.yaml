@@ -1,0 +1,23 @@
+apiVersion: pipeline.k-pipe.cloud/v1
+kind: PipelineDefinition
+...
+spec:
+  name: "test-pipeline"
+  version: "0.0.1"
+  pipelineStructure:
+    jobSteps:
+    - id: stepa
+      jobSpec:
+        image: busybox
+    - id: stepb
+      jobSpec:
+        image: busybox
+    pipes:
+    - from:
+        stepId: stepa
+        name: name1
+      to:
+        stepId: stepb
+        name: name2
+
+
