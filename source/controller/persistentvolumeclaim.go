@@ -7,7 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -36,7 +35,6 @@ func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context,
 	}
 
 	//storageClass := "standard-rwo"
-	storageClass := os.Getenv("STORAGE_CLASS")
 	size := resource.NewQuantity(sizeInGB*(1<<30), resource.BinarySI)
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -51,7 +49,7 @@ func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context,
 					corev1.ResourceStorage: *size,
 				},
 			},
-			StorageClassName: &storageClass,
+			StorageClassName: env("STORAGE_CLASS"),
 		},
 	}
 	if err := ctrl.SetControllerReference(pr, &pvc, r.Scheme); err != nil {

@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -94,4 +95,12 @@ func repeat(s string, num int) string {
 		res = res + s
 	}
 	return res
+}
+
+func env(key string) *string {
+	if value, found := os.LookupEnv(key); found {
+		return &value
+	} else {
+		return nil
+	}
 }
