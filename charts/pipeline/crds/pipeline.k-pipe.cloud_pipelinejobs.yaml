@@ -16,7 +16,17 @@ spec:
     singular: pipelinejob
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.stepId
+      name: Step
+      type: string
+    - jsonPath: .spec.jobSpec.image
+      name: Image
+      type: string
+    - jsonPath: .status.state
+      name: State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: Pipeline is the Schema for the pipelines API
@@ -38,36 +48,76 @@ spec:
             properties:
               description:
                 type: string
-              inputPipes:
+              id:
+                type: string
+              inputVolumes:
                 items:
-                  type: string
+                  description: InputPipe defines source and target name of input pipe
+                    file
+                  properties:
+                    mountPath:
+                      type: string
+                    sourceFile:
+                      type: string
+                    targetFile:
+                      type: string
+                    volume:
+                      type: string
+                  required:
+                  - mountPath
+                  - sourceFile
+                  - targetFile
+                  - volume
+                  type: object
                 type: array
               jobSpec:
                 description: JobSpec encapsulates the details of the kubernetes job
                   wrapped by PipelineJob
                 properties:
+                  activeDeadlineSeconds:
+                    format: int64
+                    type: integer
+                  args:
+                    items:
+                      type: string
+                    type: array
+                  backoffLimit:
+                    format: int32
+                    type: integer
+                  command:
+                    items:
+                      type: string
+                    type: array
                   image:
+                    type: string
+                  imagePullPolicy:
+                    description: PullPolicy describes a policy for if/when to pull
+                      a container image
+                    type: string
+                  serviceAccountName:
+                    type: string
+                  specification:
+                    x-kubernetes-preserve-unknown-fields: true
+                  terminationGracePeriodSeconds:
+                    format: int64
+                    type: integer
+                  ttlSecondsAfterFinished:
+                    format: int32
+                    type: integer
+                  workingDir:
                     type: string
                 required:
                 - image
                 type: object
-              outputPipes:
-                items:
-                  type: string
-                type: array
-              pipelineName:
-                type: string
               pipelineRun:
                 type: string
-              pipelineVersion:
+              stepId:
                 type: string
             required:
-            - inputPipes
+            - id
             - jobSpec
-            - outputPipes
-            - pipelineName
             - pipelineRun
-            - pipelineVersion
+            - stepId
             type: object
           status:
             description: ScheduleStatus defines the observed state of Schedule
@@ -140,6 +190,8 @@ spec:
                   - type
                   type: object
                 type: array
+              state:
+                type: string
             type: object
         type: object
     served: true

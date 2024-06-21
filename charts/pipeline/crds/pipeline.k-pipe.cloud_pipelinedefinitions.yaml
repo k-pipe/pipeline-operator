@@ -34,80 +34,137 @@ spec:
           metadata:
             type: object
           spec:
-            description: ScheduleSpec defines the desired state of Schedule
+            description: PipelineDefinitionSpec holds the definition of the pipeline
+              structure, the configuration of steps, and meta information
             properties:
               description:
                 type: string
               name:
                 type: string
-              pipes:
-                items:
-                  description: PipelinePipe defines details of a pipe connection between
-                    two pipeline steps
-                  properties:
-                    from:
-                      description: PipelineConnector defines step and pipe name at
-                        either end of a pipe
+              pipelineStructure:
+                description: PipelineStructure holds the information of steps and
+                  pipes that constitute a pipeline
+                properties:
+                  jobSteps:
+                    items:
+                      description: PipelineJobStepSpec defines details of a pipeline
+                        step that will run as a job
                       properties:
-                        name:
+                        config:
+                          x-kubernetes-preserve-unknown-fields: true
+                        description:
                           type: string
-                        stepId:
+                        id:
+                          type: string
+                        jobSpec:
+                          description: JobSpec encapsulates the details of the kubernetes
+                            job wrapped by PipelineJob
+                          properties:
+                            activeDeadlineSeconds:
+                              format: int64
+                              type: integer
+                            args:
+                              items:
+                                type: string
+                              type: array
+                            backoffLimit:
+                              format: int32
+                              type: integer
+                            command:
+                              items:
+                                type: string
+                              type: array
+                            image:
+                              type: string
+                            imagePullPolicy:
+                              description: PullPolicy describes a policy for if/when
+                                to pull a container image
+                              type: string
+                            serviceAccountName:
+                              type: string
+                            specification:
+                              x-kubernetes-preserve-unknown-fields: true
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
+                            ttlSecondsAfterFinished:
+                              format: int32
+                              type: integer
+                            workingDir:
+                              type: string
+                          required:
+                          - image
+                          type: object
+                      required:
+                      - id
+                      - jobSpec
+                      type: object
+                    type: array
+                  pipes:
+                    items:
+                      description: PipelinePipe defines details of a pipe connection
+                        between two pipeline steps
+                      properties:
+                        from:
+                          description: PipelineConnector defines step and pipe name
+                            at either end of a pipe
+                          properties:
+                            name:
+                              type: string
+                            stepId:
+                              type: string
+                          required:
+                          - name
+                          - stepId
+                          type: object
+                        to:
+                          description: PipelineConnector defines step and pipe name
+                            at either end of a pipe
+                          properties:
+                            name:
+                              type: string
+                            stepId:
+                              type: string
+                          required:
+                          - name
+                          - stepId
+                          type: object
+                      required:
+                      - from
+                      - to
+                      type: object
+                    type: array
+                  subPipelines:
+                    items:
+                      description: SubPipelineSpec defines details of a pipeline step
+                        that will run as a sub-pipeline
+                      properties:
+                        batched:
+                          type: boolean
+                        description:
+                          type: string
+                        id:
+                          type: string
+                        namespace:
+                          type: string
+                        pipelineName:
+                          type: string
+                        versionPattern:
                           type: string
                       required:
-                      - name
-                      - stepId
+                      - id
+                      - pipelineName
+                      - versionPattern
                       type: object
-                    to:
-                      description: PipelineConnector defines step and pipe name at
-                        either end of a pipe
-                      properties:
-                        name:
-                          type: string
-                        stepId:
-                          type: string
-                      required:
-                      - name
-                      - stepId
-                      type: object
-                  required:
-                  - from
-                  - to
-                  type: object
-                type: array
+                    type: array
+                type: object
               plantUML:
                 type: string
-              steps:
-                items:
-                  description: PipelineStep defines details of a single pipeline step
-                  properties:
-                    description:
-                      type: string
-                    id:
-                      type: string
-                    inputs:
-                      items:
-                        type: string
-                      type: array
-                    specification:
-                      pattern: ^.*$
-                      type: string
-                    type:
-                      description: 'enum: START, JOB_STEP, SUB_PIPELINE, BATCHED_SUB_PIPELINE,
-                        END'
-                      type: string
-                  required:
-                  - id
-                  - inputs
-                  - specification
-                  - type
-                  type: object
-                type: array
               version:
                 type: string
             required:
             - name
-            - pipes
-            - steps
+            - pipelineStructure
             - version
             type: object
           status:
