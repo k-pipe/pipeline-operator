@@ -60,3 +60,6 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+environment:
+  storageClass: standard

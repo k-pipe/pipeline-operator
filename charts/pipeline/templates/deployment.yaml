@@ -31,6 +31,9 @@ spec:
             - /manager
           args:
             - --leader-elect
+          env:
+            - name: STORAGE_CLASS
+              value: ""{{ .Values.env.storageClass }}"
           livenessProbe:
             httpGet:
               path: /healthz
