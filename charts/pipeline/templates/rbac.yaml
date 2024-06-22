@@ -5,6 +5,7 @@ metadata:
   name: {{ include "pipeline.controllerRoleName" . }}
 rules:
   - apiGroups:
+      - ""
       - batch
     resources:
       - cronjobs
