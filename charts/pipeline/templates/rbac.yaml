@@ -8,6 +8,8 @@ rules:
       - batch
     resources:
       - cronjobs
+      - jobs
+      - persistentVolumeClaims
     verbs:
       - create
       - delete
