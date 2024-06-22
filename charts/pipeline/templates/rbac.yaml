@@ -9,7 +9,7 @@ rules:
     resources:
       - cronjobs
       - jobs
-      - persistentVolumeClaims
+      - persistentvolumeclaims
     verbs:
       - create
       - delete
