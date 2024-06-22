@@ -1,6 +1,6 @@
 # Pipeline-Operator
 
-// TODO(user): Add simple overview of use/purpose
+This repository contains the code to build a kubernetes operatopr for defining, running and scheduling pipelines.
 
 ## Description
 // TODO(user): An in-depth paragraph about your project and overview of use
