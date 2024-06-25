@@ -25,6 +25,16 @@ func (r *PipelineJobReconciler) GetPipelineJob(ctx context.Context, name types.N
 	return res, err
 }
 
+// Gets a pipeline job object by name from api server, returns nil,nil if not found
+func (r *PipelineRunReconciler) GetPipelineJob(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineJob, error) {
+	res := &pipelinev1.PipelineJob{}
+	notexists, err := NotExistsResource(r, ctx, res, name)
+	if notexists {
+		res = nil
+	}
+	return res, err
+}
+
 // Gets a pipeline run object by name from api server, returns nil,nil if not found
 func (r *PipelineJobReconciler) GetPipelineRun(ctx context.Context, name types.NamespacedName) (*pipelinev1.PipelineRun, error) {
 	res := &pipelinev1.PipelineRun{}
@@ -91,6 +101,30 @@ func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, log func(
 	// create the cronjob
 	log("Creating a new PipelineJob", "PipelineJob.Namespace", pj.Namespace, "PipelineJob.Name", pj.Name)
 	return CreateOrUpdate(r, r, ctx, log, pj, &pipelinev1.PipelineJob{})
+}
+
+/*
+delete PipelineJob
+*/
+func (r *PipelineRunReconciler) DeletePipelineJob(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, jobName string) error {
+	pj, err := r.GetPipelineJob(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: jobName})
+	if err != nil {
+		return err
+	}
+	if pj == nil {
+		log(
+			"PipelineJob was already gone",
+			"PipelineJob.Namespace", pr.Namespace,
+			"PipelineJob.Name", jobName,
+		)
+		return nil
+	}
+	log(
+		"Deleting the PipelineJob",
+		"PipelineJob.Namespace", pr.Namespace,
+		"PipelineJob.Name", jobName,
+	)
+	return r.Delete(ctx, pj)
 }
 
 func isTrueInPipelineJob(j *pipelinev1.PipelineJob, condition string) bool {

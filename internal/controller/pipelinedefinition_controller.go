@@ -18,6 +18,12 @@ package controller
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/tools/record"
+	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +34,8 @@ import (
 // PipelineDefinitionReconciler reconciles a PipelineDefinition object
 type PipelineDefinitionReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=pipeline.k-pipe.cloud,resources=pipelinedefinitions,verbs=get;list;watch;create;update;patch;delete
@@ -48,14 +55,87 @@ func (r *PipelineDefinitionReconciler) Reconcile(ctx context.Context, req ctrl.R
 	log := Logger(ctx, req, "PD")
 	defer LoggingDone(log)
 
-	// TODO(user): your logic here
+	// get the pipeline definition by name from request
+	pd, result, err := r.loadResource(ctx, log, req.NamespacedName)
+	if result != nil {
+		return *result, err
+	}
 
+	// extract desired configmap from definition
+	conf, err := extractConfigAsMap(pd.Spec.PipelineStructure)
+	if err != nil {
+		return r.failed(ctx, "could not extract config from pipeline definition", pd, r.Recorder), err
+	}
+
+	// get configmap if it exists
+	cm, err := r.GetConfigMap(ctx, req.NamespacedName)
+	if err != nil {
+		return r.failed(ctx, "Failed to get ConfigMap", pd, r.Recorder), err
+	}
+	if cm == nil {
+		// none exists, create it
+		if _, err := r.CreateConfigMap(ctx, log, pd, pd.Name, conf); err != nil {
+			return r.failed(ctx, "Failed to create ConfigMap", pd, r.Recorder), err
+		}
+		r.Recorder.Event(pd, "Normal", "Reconciliation", "ConfigMap created")
+	} else {
+		// compare, if not equal, update it
+		if !reflect.DeepEqual(conf, cm.Data) {
+			if err := r.UpdateConfigMap(ctx, log, cm, conf); err != nil {
+				return r.failed(ctx, "Failed to update ConfigMap", pd, r.Recorder), err
+			}
+			r.Recorder.Event(pd, "Normal", "Reconciliation", "ConfigMap updated")
+		}
+	}
+
+	// reconciliation done
 	return ctrl.Result{}, nil
+}
+
+func extractConfigAsMap(structure pipelinev1.PipelineStructure) (map[string]string, error) {
+	res := map[string]string{}
+	for _, jobStep := range structure.JobSteps {
+		value, err := json.Marshal(&jobStep.Config)
+		if err != nil {
+			return nil, err
+		}
+		res[jobStep.Id] = string(value)
+	}
+	return res, nil
+}
+
+func (r *PipelineDefinitionReconciler) loadResource(ctx context.Context, log func(string, ...interface{}), name types.NamespacedName) (*pipelinev1.PipelineDefinition, *ctrl.Result, error) {
+	pj, err := GetPipelineDefinition(r, ctx, name)
+	if pj == nil {
+		// not found, this may happen when a resource is deleted, just end the reconciliation
+		log("PipelineJob resource not found. Ignoring since object has been deleted")
+		return nil, &ctrl.Result{}, nil
+	}
+	if err != nil {
+		// any other error will be logged
+		res := r.failed(ctx, "Failed to get PipelineJob", pj, r.Recorder)
+		return nil, &res, err
+	}
+	// return nil result to indicate that reconciliation can proceed
+	return pj, nil, nil
+}
+
+// called whenever an error occurred, to create an error event
+func (r *PipelineDefinitionReconciler) failed(ctx context.Context, errormessage string, pd *pipelinev1.PipelineDefinition, recorder record.EventRecorder) ctrl.Result {
+	//errState := "Error (" + errormessage + ")"
+	//pd.Status.State = &errState
+	if err := r.Status().Update(ctx, pd); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to update state to "+errormessage)
+	}
+	recorder.Event(pd, "Warning", "ReconciliationError", errormessage)
+	return ctrl.Result{}
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PipelineDefinitionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("pipeline-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&pipelinev1.PipelineDefinition{}).
+		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }
