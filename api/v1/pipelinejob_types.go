@@ -54,6 +54,8 @@ type PipelineJobSpec struct {
 	// +kubebuilder:validation:Required
 	PipelineRun string `json:"pipelineRun"`
 	// +kubebuilder:validation:Required
+	PipelineDefinition string `json:"pipelineDefinition"`
+	// +kubebuilder:validation:Required
 	StepId string `json:"stepId"`
 	// +kubebuilder:validation:Optional
 	Description *string `json:"description,omitempty"`
