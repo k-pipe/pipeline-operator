@@ -63,3 +63,27 @@ func (r *PipelineRunReconciler) CreatePersistentVolumeClaim(ctx context.Context,
 
 	return &pvc, nil
 }
+
+/*
+delete PersistentVolumeClaim
+*/
+func (r *PipelineRunReconciler) DeletePersistentVolumeClaim(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, pvcName string) error {
+	pvc, err := r.GetPersistentVolumeClaim(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: pvcName})
+	if err != nil {
+		return err
+	}
+	if pvc == nil {
+		log(
+			"PersistentVolumeClaim was already gone",
+			"PersistentVolumeClaim.Namespace", pr.Namespace,
+			"PersistentVolumeClaim.Name", pvcName,
+		)
+		return nil
+	}
+	log(
+		"Deleting the PersistentVolumeClaim",
+		"PersistentVolumeClaim.Namespace", pr.Namespace,
+		"PersistentVolumeClaim.Name", pvcName,
+	)
+	return r.Delete(ctx, pvc)
+}

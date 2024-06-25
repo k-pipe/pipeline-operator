@@ -34,7 +34,8 @@ import (
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 )
 
-const STATUS_PREFIX = "success-"
+const SUCCESS_STATUS_PREFIX = "success-"
+const PVC_STATUS_PREFIX = "pvc-"
 
 // PipelineRunReconciler reconciles a PipelineRun object
 type PipelineRunReconciler struct {
@@ -62,7 +63,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// get the pipeline run by name from request
 	pr, result, err := r.loadResource(ctx, log, req.NamespacedName)
-	if result != nil {
+	if result != nil || err != nil {
 		return *result, err
 	}
 
@@ -78,18 +79,29 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// if not paused nor terminated ...
 	if !(isTrue(pr, Paused) || isTrue(pr, Terminated)) {
-		result, err := r.startStartableStep(ctx, log, pr)
-		if result != nil {
+		if result, err := r.startStartableStep(ctx, log, pr); result != nil || err != nil {
+			return *result, err
+		}
+
+		if result, err = r.startStartableStep(ctx, log, pr); result != nil || err != nil {
 			return *result, err
 		}
 	}
 
 	// update step statistics
-	if result, err = r.updateStepStatistics(ctx, pr); result != nil {
+	if result, err = r.updateStepStatistics(ctx, pr); result != nil || err != nil {
 		return *result, err
 	}
 
-	// TODO determine terminated
+	// delete unneeded volumes
+	if result, err = r.removeUnneededPipelineJob(ctx, log, pr); result != nil || err != nil {
+		return *result, err
+	}
+
+	// set state to succeeded or failed
+	if result, err = r.determineTerminalRunState(ctx, pr); result != nil || err != nil {
+		return *result, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -159,10 +171,18 @@ func (r *PipelineRunReconciler) startStartableStep(ctx context.Context, log func
 	if step := findNextStartableStep(pr); step != nil {
 		log("Starting step: " + step.Id)
 		jobName := r.ConstructPipelineJobName(pr, step.Id)
-		var volumeSize int64 = 10 // TODO replace by resource specs
-		if _, err := r.CreatePersistentVolumeClaim(ctx, log, pr, jobName, volumeSize); err != nil {
-			result := r.failed(ctx, "Failed to create PersistentVolume for step: "+step.Id, pr, r.Recorder)
-			return &result, err
+		if !isPVCActive(pr, step.Id) {
+			// create pvc
+			var volumeSize int64 = 10 // TODO replace by resource specs
+			if _, err := r.CreatePersistentVolumeClaim(ctx, log, pr, jobName, volumeSize); err != nil {
+				result := r.failed(ctx, "Failed to create PersistentVolume for step: "+step.Id, pr, r.Recorder)
+				return &result, err
+			}
+			// set volume flag to true
+			if err := r.setPVCStatus(ctx, log, pr, step.Id, v1.ConditionTrue, "pvc was created"); err != nil {
+				result := r.failed(ctx, "Failed to set pvc flag active: "+step.Id, pr, r.Recorder)
+				return &result, err
+			}
 		}
 		state := "Started " + step.Id
 		pr.Status.State = &state
@@ -202,11 +222,21 @@ func allInputsSucceeded(pr *pipelinev1.PipelineRun, step string) bool {
 	return true
 }
 
+// check all dependent steps (those at the other end of a pipe that has the given step as source), whether they succeeded
+func allOutputsSucceeded(pr *pipelinev1.PipelineRun, step string) bool {
+	for _, pipe := range pr.Status.PipelineStructure.Pipes {
+		if (pipe.From.StepId == step) && !hasSucceeded(pr, pipe.To.StepId) {
+			return false
+		}
+	}
+	return true
+}
+
 func (r *PipelineRunReconciler) updateStepStatistics(ctx context.Context, pr *pipelinev1.PipelineRun) (*ctrl.Result, error) {
 	// count steps per success status
 	count := map[v1.ConditionStatus]int{}
 	for _, condition := range pr.Status.Conditions {
-		if strings.HasPrefix(condition.Type, STATUS_PREFIX) {
+		if strings.HasPrefix(condition.Type, SUCCESS_STATUS_PREFIX) {
 			count[condition.Status]++
 		}
 	}
@@ -229,8 +259,80 @@ func (r *PipelineRunReconciler) updateStepStatistics(ctx context.Context, pr *pi
 	return nil, nil
 }
 
+func (r *PipelineRunReconciler) removeUnneededPipelineJob(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun) (*ctrl.Result, error) {
+	for _, step := range pr.Status.PipelineStructure.JobSteps {
+		if hasSucceeded(pr, step.Id) && isPVCActive(pr, step.Id) && allOutputsSucceeded(pr, step.Id) {
+			jobName := r.ConstructPipelineJobName(pr, step.Id)
+
+			// delete the job, otherwise pvc will still be bound
+			if err := r.DeletePipelineJob(ctx, log, pr, jobName); err != nil {
+				result := r.failed(ctx, "Failed to delete PipelineJob: "+jobName, pr, r.Recorder)
+				return &result, err
+			}
+
+			// delete the volume, it will not be needed anymore
+			if err := r.DeletePersistentVolumeClaim(ctx, log, pr, jobName); err != nil {
+				result := r.failed(ctx, "Failed to delete PersistentVolumeClaim: "+step.Id, pr, r.Recorder)
+				return &result, err
+			}
+
+			// set volume flag to false
+			if err := r.setPVCStatus(ctx, log, pr, step.Id, v1.ConditionFalse, "pvc was deleted"); err != nil {
+				result := r.failed(ctx, "Failed to set pvc flag inactive: "+jobName, pr, r.Recorder)
+				return &result, err
+			}
+
+			// changes to state have been made, return empty result to stop current reconciliation iteration
+			return &ctrl.Result{}, nil
+		}
+	}
+
+	// return nil result to indicate that reconciliation can proceed
+	return nil, nil
+}
+
+func (r *PipelineRunReconciler) determineTerminalRunState(ctx context.Context, pr *pipelinev1.PipelineRun) (*ctrl.Result, error) {
+	allSucceeded := true
+	someFailed := false
+	for _, step := range pr.Status.PipelineStructure.JobSteps {
+		if !hasSucceeded(pr, step.Id) {
+			allSucceeded = false
+		}
+		if hasFailed(pr, step.Id) {
+			someFailed = true
+		}
+	}
+	oldState := *pr.Status.State
+	newState := oldState
+	if allSucceeded {
+		newState = Succeeded
+	}
+	if someFailed {
+		newState = Failed
+	}
+	if oldState != newState {
+		pr.Status.State = &newState
+		if err := r.Status().Update(ctx, pr); err != nil {
+			result := r.failed(ctx, "Failed to update state of PipelineRun", pr, r.Recorder)
+			return &result, err
+		}
+		message := "Pipeline has terminated with result: " + newState
+		r.Recorder.Event(pr, "Normal", "PipelineRunTerminated", message)
+
+		// changes to state have been made, return empty result to stop current reconciliation iteration
+		return &ctrl.Result{}, nil
+	}
+
+	// return nil result to indicate that reconciliation can proceed
+	return nil, nil
+}
+
 func isTrue(pr *pipelinev1.PipelineRun, condition string) bool {
 	return meta.IsStatusConditionPresentAndEqual(pr.Status.Conditions, condition, v1.ConditionTrue)
+}
+
+func isFalse(pr *pipelinev1.PipelineRun, condition string) bool {
+	return meta.IsStatusConditionPresentAndEqual(pr.Status.Conditions, condition, v1.ConditionFalse)
 }
 
 func isActive(pr *pipelinev1.PipelineRun, stepId string) bool {
@@ -241,8 +343,24 @@ func hasSucceeded(pr *pipelinev1.PipelineRun, stepId string) bool {
 	return isTrue(pr, StepStatus(stepId))
 }
 
+func hasFailed(pr *pipelinev1.PipelineRun, stepId string) bool {
+	return isFalse(pr, StepStatus(stepId))
+}
+
 func StepStatus(stepId string) string {
-	return STATUS_PREFIX + stepId
+	return SUCCESS_STATUS_PREFIX + stepId
+}
+
+func isPVCActive(pr *pipelinev1.PipelineRun, stepId string) bool {
+	return isTrue(pr, PVCStatus(stepId))
+}
+
+func PVCStatus(stepId string) string {
+	return PVC_STATUS_PREFIX + stepId
+}
+
+func (r *PipelineRunReconciler) setPVCStatus(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun, stepId string, state v1.ConditionStatus, message string) error {
+	return r.SetPipelineRunStatus(ctx, log, pr, PVCStatus(stepId), state, message)
 }
 
 // SetupWithManager sets up the controller with the Manager.

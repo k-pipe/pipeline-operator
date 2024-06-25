@@ -162,7 +162,10 @@ func (r *PipelineJobReconciler) updatedJobStatus(ctx context.Context, log func(s
 			res := r.failed(ctx, "Failed to get PipelineRun resource for updating JobSucceeded status", pj, r.Recorder)
 			return &res, err
 		}
-		r.SetPipelineRunStatus(ctx, log, pr, StepStatus(pj.Spec.StepId), newSucceededState, message)
+		if err := r.SetPipelineRunStatus(ctx, log, pr, StepStatus(pj.Spec.StepId), newSucceededState, message); err != nil {
+			res := r.failed(ctx, "Failed to set PipelineRun status", pj, r.Recorder)
+			return &res, err
+		}
 
 		// then set it on PipelineJob
 		var state string
