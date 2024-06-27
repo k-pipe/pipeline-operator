@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,12 +38,22 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
 	}
 	// the labels to be attached to the pod
+	imageRepoClassLabel := "breuninger.de/image-repo-class"
+	repoClasses := [][]string{
+		{"europe-west3-docker.pkg.dev/breuni-team-admin-ace/", "trusted"},
+		{"europe-west3-docker.pkg.dev/breuni-team-admin-", "tenant"},
+	}
+	imageRepoClass := determineRepoClass(repoClasses, pj.Spec.JobSpec.Image)
+	if imageRepoClass == nil {
+		return nil, errors.New("Docker repository for payload image was not found in whitelist")
+	}
 	podLabels := map[string]string{
 		"app.kubernetes.io/name":       "PipelineSchedule",
 		"app.kubernetes.io/instance":   jobName,
 		"app.kubernetes.io/version":    "v1",
 		"app.kubernetes.io/part-of":    "pipeline-operator",
 		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
+		imageRepoClassLabel:            *imageRepoClass,
 	}
 	var one int32 = 1
 	nonIndexed := batchv1.NonIndexedCompletion
@@ -55,6 +66,30 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
 	initCommands := ""
+
+	// add volume for config (points to config map with name of pipeline
+	configVolumeName := "config"
+	configFileName := "config.json"
+	configLocation := "/etc/config"
+	configVolume := corev1.Volume{
+		Name: configVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: pj.Spec.PipelineDefinition,
+				},
+				Items: []corev1.KeyToPath{
+					corev1.KeyToPath{
+						Key:  pj.Spec.StepId,
+						Path: configFileName,
+					},
+				},
+			},
+		},
+	}
+	volumes = append(volumes, configVolume)
+	// add volumemount for config
+	volumeMounts = append(volumeMounts, getVolumeMount(configVolumeName, configLocation))
 
 	// settings working directory
 	var sizeInGB int64 = 1
@@ -123,6 +158,10 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 		TTY:                      false, // TODO is this security critical?
 	}
 
+	nodeSelector := map[string]string{
+		"topology.kubernetes.io/zone": "europe-west3-b",
+	}
+
 	shellImage := "bash"
 	shellCommand := "bash"
 	initContainer := corev1.Container{
@@ -165,7 +204,7 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 					ActiveDeadlineSeconds:        pj.Spec.JobSpec.ActiveDeadlineSeconds,
 					DNSPolicy:                    corev1.DNSClusterFirst, // TODO
 					DNSConfig:                    nil,                    // TODO
-					NodeSelector:                 nil,                    // TODO
+					NodeSelector:                 nodeSelector,
 					ServiceAccountName:           pj.Spec.JobSpec.ServiceAccountName,
 					AutomountServiceAccountToken: nil, // TODO
 					HostNetwork:                  false,
@@ -215,6 +254,15 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 	}
 
 	return job, nil
+}
+
+func determineRepoClass(classes [][]string, image string) *string {
+	for _, prefixClass := range classes {
+		if strings.HasPrefix(image, prefixClass[0]) {
+			return &prefixClass[1]
+		}
+	}
+	return nil
 }
 
 func addInitCommand(commands *string, command ...string) {

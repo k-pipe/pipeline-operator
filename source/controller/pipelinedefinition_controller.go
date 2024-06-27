@@ -64,28 +64,12 @@ func (r *PipelineDefinitionReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// extract desired configmap from definition
 	conf, err := extractConfigAsMap(pd.Spec.PipelineStructure)
 	if err != nil {
-		return r.failed(ctx, "could not extract config from pipeline definition", pd, r.Recorder), err
+		return r.failed(ctx, "could not extract config from pipeline definition", err, pd, r.Recorder), err
 	}
 
-	// get configmap if it exists
-	cm, err := r.GetConfigMap(ctx, req.NamespacedName)
-	if err != nil {
-		return r.failed(ctx, "Failed to get ConfigMap", pd, r.Recorder), err
-	}
-	if cm == nil {
-		// none exists, create it
-		if _, err := r.CreateConfigMap(ctx, log, pd, pd.Name, conf); err != nil {
-			return r.failed(ctx, "Failed to create ConfigMap", pd, r.Recorder), err
-		}
-		r.Recorder.Event(pd, "Normal", "Reconciliation", "ConfigMap created")
-	} else {
-		// compare, if not equal, update it
-		if !reflect.DeepEqual(conf, cm.Data) {
-			if err := r.UpdateConfigMap(ctx, log, cm, conf); err != nil {
-				return r.failed(ctx, "Failed to update ConfigMap", pd, r.Recorder), err
-			}
-			r.Recorder.Event(pd, "Normal", "Reconciliation", "ConfigMap updated")
-		}
+	// update configmap with same name as pipeline definition
+	if result, err := r.updateConfigMap(ctx, log, pd, conf, req.NamespacedName); result != nil {
+		return *result, err
 	}
 
 	// reconciliation done
@@ -113,7 +97,7 @@ func (r *PipelineDefinitionReconciler) loadResource(ctx context.Context, log fun
 	}
 	if err != nil {
 		// any other error will be logged
-		res := r.failed(ctx, "Failed to get PipelineJob", pj, r.Recorder)
+		res := r.failed(ctx, "Failed to get PipelineJob", err, pj, r.Recorder)
 		return nil, &res, err
 	}
 	// return nil result to indicate that reconciliation can proceed
@@ -121,9 +105,12 @@ func (r *PipelineDefinitionReconciler) loadResource(ctx context.Context, log fun
 }
 
 // called whenever an error occurred, to create an error event
-func (r *PipelineDefinitionReconciler) failed(ctx context.Context, errormessage string, pd *pipelinev1.PipelineDefinition, recorder record.EventRecorder) ctrl.Result {
+func (r *PipelineDefinitionReconciler) failed(ctx context.Context, errormessage string, err error, pd *pipelinev1.PipelineDefinition, recorder record.EventRecorder) ctrl.Result {
+	if err != nil {
+		errormessage = errormessage + ": " + err.Error()
+	}
 	//errState := "Error (" + errormessage + ")"
-	//pd.Status.State = &errState
+	//pd.Status.State = &errState # TODO add state
 	if err := r.Status().Update(ctx, pd); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to update state to "+errormessage)
 	}
@@ -137,5 +124,41 @@ func (r *PipelineDefinitionReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&pipelinev1.PipelineDefinition{}).
 		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.ServiceAccount{}).
 		Complete(r)
+}
+
+func (r *PipelineDefinitionReconciler) updateConfigMap(ctx context.Context, log func(string, ...interface{}), pd *pipelinev1.PipelineDefinition, conf map[string]string, name types.NamespacedName) (*ctrl.Result, error) {
+	// get configmap if it exists
+	cm, err := r.GetConfigMap(ctx, name)
+	if err != nil {
+		res := r.failed(ctx, "Failed to get ConfigMap", err, pd, r.Recorder)
+		return &res, err
+	}
+	if cm == nil {
+		// none exists, create it
+		if _, err := r.CreateConfigMap(ctx, log, pd, pd.Name, conf); err != nil {
+			res := r.failed(ctx, "Failed to create ConfigMap", err, pd, r.Recorder)
+			return &res, err
+		}
+		r.Recorder.Event(pd, "Normal", "Reconciliation", "ConfigMap created")
+
+		// changes made end reconciliation iteration
+		return &ctrl.Result{}, nil
+	} else {
+		if reflect.DeepEqual(conf, cm.Data) {
+			// continue reconciliation
+			return nil, nil
+		}
+		// not equal, update it
+		if err := r.UpdateConfigMap(ctx, log, cm, conf); err != nil {
+			res := r.failed(ctx, "Failed to update ConfigMap", err, pd, r.Recorder)
+			return &res, err
+		}
+		r.Recorder.Event(pd, "Normal", "Reconciliation", "ConfigMap updated")
+
+		// changes made end reconciliation iteration
+		return &ctrl.Result{}, nil
+	}
+
 }

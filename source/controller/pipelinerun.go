@@ -43,3 +43,7 @@ func (r *PipelineRunReconciler) DeterminePipelineVersion(ctx context.Context, pr
 	// TODO
 	return nil
 }
+
+func getPipelineId(pr pipelinev1.PipelineRun) string {
+	return pr.Spec.PipelineName + "-" + *pr.Status.PipelineVersion
+}

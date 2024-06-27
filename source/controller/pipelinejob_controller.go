@@ -65,7 +65,7 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// create job if it does not exist, yet
 	j, err := r.GetJob(ctx, req.NamespacedName)
 	if err != nil {
-		return r.failed(ctx, "Failed to get PipelineJob", pj, r.Recorder), err
+		return r.failed(ctx, "Failed to get PipelineJob", err, pj, r.Recorder), err
 	}
 	if j == nil {
 		return r.createJob(ctx, log, pj)
@@ -82,13 +82,13 @@ func (r *PipelineJobReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *PipelineJobReconciler) createJob(ctx context.Context, log func(string, ...interface{}), pj *pipelinev1.PipelineJob) (ctrl.Result, error) {
 	j, err := r.CreateJob(ctx, log, pj)
 	if err != nil {
-		return r.failed(ctx, "Failed to create Job", pj, r.Recorder), err
+		return r.failed(ctx, "Failed to create Job", err, pj, r.Recorder), err
 	}
 
 	state := "Job created"
 	pj.Status.State = &state
 	if r.SetPipelineJobStatus(ctx, log, pj, JobCreated, metav1.ConditionTrue, "Created Job: "+j.Name) != nil {
-		return r.failed(ctx, "Failed to set JobCreated status: "+j.Name, pj, r.Recorder), err
+		return r.failed(ctx, "Failed to set JobCreated status", err, pj, r.Recorder), err
 	}
 	r.Recorder.Event(pj, "Normal", "Reconciliation", "Created Job: "+j.Name)
 
@@ -105,7 +105,7 @@ func (r *PipelineJobReconciler) loadResource(ctx context.Context, log func(strin
 	}
 	if err != nil {
 		// any other error will be logged
-		res := r.failed(ctx, "Failed to get PipelineJob", pj, r.Recorder)
+		res := r.failed(ctx, "Failed to get PipelineJob", err, pj, r.Recorder)
 		return nil, &res, err
 	}
 	// return nil result to indicate that reconciliation can proceed
@@ -122,7 +122,10 @@ func (r *PipelineJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // called whenever an error occurred, to create an error event
-func (r *PipelineJobReconciler) failed(ctx context.Context, errormessage string, pj *pipelinev1.PipelineJob, recorder record.EventRecorder) ctrl.Result {
+func (r *PipelineJobReconciler) failed(ctx context.Context, errormessage string, err error, pj *pipelinev1.PipelineJob, recorder record.EventRecorder) ctrl.Result {
+	if err != nil {
+		errormessage = errormessage + ": " + err.Error()
+	}
 	errState := "Error (" + errormessage + ")"
 	pj.Status.State = &errState
 	if err := r.Status().Update(ctx, pj); err != nil {
@@ -159,11 +162,11 @@ func (r *PipelineJobReconciler) updatedJobStatus(ctx context.Context, log func(s
 		// first set on PipelineRun (to make sure to retry this in case it fails)
 		pr, err := r.GetPipelineRun(ctx, types.NamespacedName{Name: pj.Spec.PipelineRun, Namespace: pj.Namespace})
 		if err != nil || pr == nil {
-			res := r.failed(ctx, "Failed to get PipelineRun resource for updating JobSucceeded status", pj, r.Recorder)
+			res := r.failed(ctx, "Failed to get PipelineRun resource for updating JobSucceeded status", err, pj, r.Recorder)
 			return &res, err
 		}
 		if err := r.SetPipelineRunStatus(ctx, log, pr, StepStatus(pj.Spec.StepId), newSucceededState, message); err != nil {
-			res := r.failed(ctx, "Failed to set PipelineRun status", pj, r.Recorder)
+			res := r.failed(ctx, "Failed to set PipelineRun status", err, pj, r.Recorder)
 			return &res, err
 		}
 
@@ -179,7 +182,7 @@ func (r *PipelineJobReconciler) updatedJobStatus(ctx context.Context, log func(s
 		}
 		pj.Status.State = &state
 		if r.SetPipelineJobStatus(ctx, log, pj, JobSucceeded, newSucceededState, message) != nil {
-			res := r.failed(ctx, "Failed to set PipelineJob succeeded status", pj, r.Recorder)
+			res := r.failed(ctx, "Failed to set PipelineJob succeeded status", err, pj, r.Recorder)
 			return &res, err
 		}
 
