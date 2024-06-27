@@ -115,7 +115,7 @@ func (r *PipelineRunReconciler) loadResource(ctx context.Context, log func(strin
 	}
 	if err != nil {
 		// any other error will be logged
-		res := r.failed(ctx, "Failed to get PipelineRun", pr, r.Recorder)
+		res := r.failed(ctx, "Failed to get PipelineRun", err, pr, r.Recorder)
 		return nil, &res, err
 	}
 	// return nil result to indicate that reconciliation can proceed
@@ -127,12 +127,12 @@ func (r *PipelineRunReconciler) determinePipelineVersion(ctx context.Context, lo
 	err := r.DeterminePipelineVersion(ctx, pr)
 	if err != nil {
 		// any other error will be logged
-		return r.failed(ctx, "Failed to determine which pipeline version to run", pr, r.Recorder), err
+		return r.failed(ctx, "Failed to determine which pipeline version to run", err, pr, r.Recorder), err
 	}
 	state := VersionDetermined
 	pr.Status.State = &state
 	if err = r.SetPipelineRunStatus(ctx, log, pr, state, v1.ConditionTrue, "Pipeline version used for run: "+*pr.Status.PipelineVersion); err != nil {
-		return r.failed(ctx, "Failed to set PipelineRun status", pr, r.Recorder), err
+		return r.failed(ctx, "Failed to set PipelineRun status", err, pr, r.Recorder), err
 	}
 	r.Recorder.Event(pr, "Normal", "Reconciliation", "Pipeline version determined: "+*pr.Status.PipelineVersion)
 	// changes to state have been made, return empty result to stop current reconciliation iteration
@@ -140,13 +140,13 @@ func (r *PipelineRunReconciler) determinePipelineVersion(ctx context.Context, lo
 }
 
 func (r *PipelineRunReconciler) storePipelineStructure(ctx context.Context, log func(string, ...interface{}), pr *pipelinev1.PipelineRun) (ctrl.Result, error) {
-	pipelineDefinition := pr.Spec.PipelineName + "-" + *pr.Status.PipelineVersion
+	pipelineDefinition := getPipelineId(*pr)
 	pd, err := GetPipelineDefinition(r, ctx, types.NamespacedName{Name: pipelineDefinition, Namespace: pr.Namespace})
 	if err != nil {
-		return r.failed(ctx, "Failed to load pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
+		return r.failed(ctx, "Failed to load pipeline definition", err, pr, r.Recorder), err
 	}
 	if pd == nil {
-		return r.failed(ctx, "No such pipeline definition: "+pipelineDefinition, pr, r.Recorder), err
+		return r.failed(ctx, "No such pipeline definition", err, pr, r.Recorder), err
 	}
 	// make a deep copy
 	structure := pd.Spec.PipelineStructure.DeepCopy()
@@ -160,7 +160,7 @@ func (r *PipelineRunReconciler) storePipelineStructure(ctx context.Context, log 
 	state := StructureLoaded
 	pr.Status.State = &state
 	if err = r.SetPipelineRunStatus(ctx, log, pr, state, v1.ConditionTrue, message); err != nil {
-		return r.failed(ctx, "Failed to set PipelineRun status", pr, r.Recorder), err
+		return r.failed(ctx, "Failed to set PipelineRun status", err, pr, r.Recorder), err
 	}
 	r.Recorder.Event(pr, "Normal", "Reconciliation", message)
 	// changes to state have been made, return empty result to stop current reconciliation iteration
@@ -175,23 +175,23 @@ func (r *PipelineRunReconciler) startStartableStep(ctx context.Context, log func
 			// create pvc
 			var volumeSize int64 = 10 // TODO replace by resource specs
 			if _, err := r.CreatePersistentVolumeClaim(ctx, log, pr, jobName, volumeSize); err != nil {
-				result := r.failed(ctx, "Failed to create PersistentVolume for step: "+step.Id, pr, r.Recorder)
+				result := r.failed(ctx, "Failed to create PersistentVolume", err, pr, r.Recorder)
 				return &result, err
 			}
 			// set volume flag to true
 			if err := r.setPVCStatus(ctx, log, pr, step.Id, v1.ConditionTrue, "pvc was created"); err != nil {
-				result := r.failed(ctx, "Failed to set pvc flag active: "+step.Id, pr, r.Recorder)
+				result := r.failed(ctx, "Failed to set pvc flag active", err, pr, r.Recorder)
 				return &result, err
 			}
 		}
 		state := "Started " + step.Id
 		pr.Status.State = &state
 		if err := r.SetPipelineRunStatus(ctx, log, pr, StepStatus(step.Id), v1.ConditionUnknown, "Started step: "+step.Id); err != nil {
-			result := r.failed(ctx, "Failed to update PipelineRunStatus for job step: "+step.Id, pr, r.Recorder)
+			result := r.failed(ctx, "Failed to update PipelineRunStatus for job step "+step.Id, err, pr, r.Recorder)
 			return &result, err
 		}
 		if err := r.CreatePipelineJob(ctx, log, pr, jobName, step); err != nil {
-			result := r.failed(ctx, "Failed to create PipelineJob for step: "+step.Id, pr, r.Recorder)
+			result := r.failed(ctx, "Failed to create PipelineJob for step "+step.Id, err, pr, r.Recorder)
 			return &result, err
 		}
 		r.Recorder.Event(pr, "Normal", "PipelineExecution", "Created PipelineJob: "+step.Id)
@@ -247,7 +247,7 @@ func (r *PipelineRunReconciler) updateStepStatistics(ctx context.Context, pr *pi
 		pr.Status.NumStepsSucceeded = count[v1.ConditionTrue]
 		pr.Status.NumStepsFailed = count[v1.ConditionFalse]
 		if err := r.Status().Update(ctx, pr); err != nil {
-			result := r.failed(ctx, "Failed to update step statistics of PipelineRun", pr, r.Recorder)
+			result := r.failed(ctx, "Failed to update step statistics of PipelineRun", err, pr, r.Recorder)
 			return &result, err
 		}
 		r.Recorder.Event(pr, "Normal", "PipelineExecution", message)
@@ -266,19 +266,19 @@ func (r *PipelineRunReconciler) removeUnneededPipelineJob(ctx context.Context, l
 
 			// delete the job, otherwise pvc will still be bound
 			if err := r.DeletePipelineJob(ctx, log, pr, jobName); err != nil {
-				result := r.failed(ctx, "Failed to delete PipelineJob: "+jobName, pr, r.Recorder)
+				result := r.failed(ctx, "Failed to delete PipelineJob", err, pr, r.Recorder)
 				return &result, err
 			}
 
 			// delete the volume, it will not be needed anymore
 			if err := r.DeletePersistentVolumeClaim(ctx, log, pr, jobName); err != nil {
-				result := r.failed(ctx, "Failed to delete PersistentVolumeClaim: "+step.Id, pr, r.Recorder)
+				result := r.failed(ctx, "Failed to delete PersistentVolumeClaim", err, pr, r.Recorder)
 				return &result, err
 			}
 
 			// set volume flag to false
 			if err := r.setPVCStatus(ctx, log, pr, step.Id, v1.ConditionFalse, "pvc was deleted"); err != nil {
-				result := r.failed(ctx, "Failed to set pvc flag inactive: "+jobName, pr, r.Recorder)
+				result := r.failed(ctx, "Failed to set pvc flag inactive", err, pr, r.Recorder)
 				return &result, err
 			}
 
@@ -313,7 +313,7 @@ func (r *PipelineRunReconciler) determineTerminalRunState(ctx context.Context, p
 	if oldState != newState {
 		pr.Status.State = &newState
 		if err := r.Status().Update(ctx, pr); err != nil {
-			result := r.failed(ctx, "Failed to update state of PipelineRun", pr, r.Recorder)
+			result := r.failed(ctx, "Failed to update state of PipelineRun", err, pr, r.Recorder)
 			return &result, err
 		}
 		message := "Pipeline has terminated with result: " + newState
@@ -374,7 +374,10 @@ func (r *PipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // called whenever an error occurred, to create an error event
-func (r *PipelineRunReconciler) failed(ctx context.Context, errormessage string, pr *pipelinev1.PipelineRun, recorder record.EventRecorder) ctrl.Result {
+func (r *PipelineRunReconciler) failed(ctx context.Context, errormessage string, err error, pr *pipelinev1.PipelineRun, recorder record.EventRecorder) ctrl.Result {
+	if err != nil {
+		errormessage = errormessage + ": " + err.Error()
+	}
 	errState := "Error (" + errormessage + ")"
 	pr.Status.State = &errState
 	if err := r.Status().Update(ctx, pr); err != nil {

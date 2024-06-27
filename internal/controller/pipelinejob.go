@@ -84,12 +84,13 @@ func (r *PipelineRunReconciler) CreatePipelineJob(ctx context.Context, log func(
 			Labels:    jobLabels,
 		},
 		Spec: pipelinev1.PipelineJobSpec{
-			Id:          jobName,
-			Description: spec.Description,
-			Inputs:      inputs,
-			JobSpec:     spec.JobSpec.DeepCopy(),
-			PipelineRun: pr.Name,
-			StepId:      spec.Id,
+			Id:                 jobName,
+			Description:        spec.Description,
+			Inputs:             inputs,
+			JobSpec:            spec.JobSpec.DeepCopy(),
+			PipelineRun:        pr.Name,
+			PipelineDefinition: getPipelineId(*pr),
+			StepId:             spec.Id,
 		},
 	}
 	// Set the ownerRef for the PipelineJob
