@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"strings"
 
 	pipelinev1 "github.com/k-pipe/pipeline-operator/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -69,6 +70,11 @@ func (r *PipelineDefinitionReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	// update configmap with same name as pipeline definition
 	if result, err := r.updateConfigMap(ctx, log, pd, conf, req.NamespacedName); result != nil {
+		return *result, err
+	}
+
+	// create service accounts
+	if result, err := r.updateServiceAccount(ctx, log, pd); result != nil {
 		return *result, err
 	}
 
@@ -160,5 +166,56 @@ func (r *PipelineDefinitionReconciler) updateConfigMap(ctx context.Context, log 
 		// changes made end reconciliation iteration
 		return &ctrl.Result{}, nil
 	}
+}
 
+func (r *PipelineDefinitionReconciler) updateServiceAccount(ctx context.Context, log func(string, ...interface{}), pd *pipelinev1.PipelineDefinition) (*ctrl.Result, error) {
+	// check all service accounts defined in job steps
+	for _, step := range pd.Spec.PipelineStructure.JobSteps {
+		name := step.JobSpec.ServiceAccountName
+		if len(name) > 0 {
+			namespacedName := types.NamespacedName{Namespace: pd.Namespace, Name: name}
+			// check if a service account already exists
+			sa, err := r.GetServiceAccount(ctx, namespacedName)
+			if err != nil {
+				res := r.failed(ctx, "Failed to get service account", err, pd, r.Recorder)
+				return &res, err
+			}
+			// if sa does not exist, create it
+			if sa == nil {
+				annotationLabel := "iam.gke.io/gcp-service-account" // TODO in config
+				//annotationTemplate := "{name}@breuni-team-admin-{namespace}.iam.gserviceaccount.com" // TODO in config
+				annotationTemplate := "bucket-lister-sa@breuninger-pipeline-processing.iam.gserviceaccount.com"
+				if _, err := r.CreateServiceAccount(ctx, log, pd, namespacedName, annotationLabel, resolve(annotationTemplate, pd.Namespace, name)); err != nil {
+					res := r.failed(ctx, "Failed to create service account", err, pd, r.Recorder)
+					return &res, err
+				}
+				r.Recorder.Event(pd, "Normal", "Reconciliation", "Created service account "+name)
+
+				// changes made: end reconciliation iteration
+				return &ctrl.Result{}, nil
+			}
+			// check if pd is already registered as owner
+			added, err := r.addOwnership(ctx, log, sa, pd)
+			if err != nil {
+				res := r.failed(ctx, "Failed to add ownership to service account", err, pd, r.Recorder)
+				return &res, err
+			}
+			if added {
+				r.Recorder.Event(pd, "Normal", "Reconciliation", "Added ownership reference to service account "+name)
+
+				// changes made: end reconciliation iteration
+				return &ctrl.Result{}, nil
+			}
+		}
+	}
+
+	// nothing done, continue reconciliation
+	return nil, nil
+}
+
+func resolve(template string, namespace string, name string) string {
+	res := template
+	res = strings.ReplaceAll(res, "{namespace}", namespace)
+	res = strings.ReplaceAll(res, "{name}", name)
+	return res
 }
