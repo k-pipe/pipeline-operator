@@ -182,9 +182,9 @@ func (r *PipelineDefinitionReconciler) updateServiceAccount(ctx context.Context,
 			}
 			// if sa does not exist, create it
 			if sa == nil {
-				annotationLabel := "iam.gke.io/gcp-service-account" // TODO in config
-				//annotationTemplate := "{name}@breuni-team-admin-{namespace}.iam.gserviceaccount.com" // TODO in config
-				annotationTemplate := "bucket-lister-sa@breuninger-pipeline-processing.iam.gserviceaccount.com"
+				annotationLabel := "iam.gke.io/gcp-service-account"                                  // TODO in config
+				annotationTemplate := "{name}@breuni-team-admin-{namespace}.iam.gserviceaccount.com" // TODO in config
+				//annotationTemplate := "bucket-lister-sa@breuninger-pipeline-processing.iam.gserviceaccount.com"
 				if _, err := r.CreateServiceAccount(ctx, log, pd, namespacedName, annotationLabel, resolve(annotationTemplate, pd.Namespace, name)); err != nil {
 					res := r.failed(ctx, "Failed to create service account", err, pd, r.Recorder)
 					return &res, err
