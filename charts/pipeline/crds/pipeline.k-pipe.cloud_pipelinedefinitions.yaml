@@ -160,6 +160,47 @@ spec:
                 type: object
               plantUML:
                 type: string
+              terminationJobs:
+                items:
+                  description: JobSpec encapsulates the details of the kubernetes
+                    job wrapped by PipelineJob
+                  properties:
+                    activeDeadlineSeconds:
+                      format: int64
+                      type: integer
+                    args:
+                      items:
+                        type: string
+                      type: array
+                    backoffLimit:
+                      format: int32
+                      type: integer
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    image:
+                      type: string
+                    imagePullPolicy:
+                      description: PullPolicy describes a policy for if/when to pull
+                        a container image
+                      type: string
+                    serviceAccountName:
+                      type: string
+                    specification:
+                      x-kubernetes-preserve-unknown-fields: true
+                    terminationGracePeriodSeconds:
+                      format: int64
+                      type: integer
+                    ttlSecondsAfterFinished:
+                      format: int32
+                      type: integer
+                    workingDir:
+                      type: string
+                  required:
+                  - image
+                  type: object
+                type: array
               version:
                 type: string
             required:
