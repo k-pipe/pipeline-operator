@@ -24,41 +24,10 @@ func (r *PipelineJobReconciler) GetJob(ctx context.Context, name types.Namespace
 }
 
 /*
-create Kubernetes Job
+create Kubernetes Job running a step contaiiner
 */
 func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, ...interface{}), pj *pipelinev1.PipelineJob) (*batchv1.Job, error) {
 	jobName := pj.Name
-
-	// the labels to be attached to job
-	jobLabels := map[string]string{
-		"app.kubernetes.io/name":       "PipelineSchedule",
-		"app.kubernetes.io/instance":   jobName,
-		"app.kubernetes.io/version":    "v1",
-		"app.kubernetes.io/part-of":    "pipeline-operator",
-		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
-	}
-	// the labels to be attached to the pod
-	imageRepoClassLabel := "breuninger.de/image-repo-class"
-	repoClasses := [][]string{
-		{"europe-west3-docker.pkg.dev/breuni-team-admin-ace/", "trusted"},
-		{"europe-west3-docker.pkg.dev/breuni-team-admin-", "tenant"},
-	}
-	imageRepoClass := determineRepoClass(repoClasses, pj.Spec.JobSpec.Image)
-	if imageRepoClass == nil {
-		return nil, errors.New("Docker repository for payload image was not found in whitelist")
-	}
-	podLabels := map[string]string{
-		"app.kubernetes.io/name":       "PipelineSchedule",
-		"app.kubernetes.io/instance":   jobName,
-		"app.kubernetes.io/version":    "v1",
-		"app.kubernetes.io/part-of":    "pipeline-operator",
-		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
-		imageRepoClassLabel:            *imageRepoClass,
-	}
-	var one int32 = 1
-	nonIndexed := batchv1.NonIndexedCompletion
-	var noSuspend bool = false
-	replaceAfterFailed := batchv1.Failed
 	var resources corev1.ResourceRequirements
 	terminationMessagePath := "/dev/termination-log" // TODO use this
 
@@ -158,10 +127,6 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 		TTY:                      false, // TODO is this security critical?
 	}
 
-	nodeSelector := map[string]string{
-		"topology.kubernetes.io/zone": "europe-west3-b",
-	}
-
 	shellImage := "bash"
 	shellCommand := "bash"
 	initContainer := corev1.Container{
@@ -174,18 +139,99 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 		ImagePullPolicy: pj.Spec.JobSpec.ImagePullPolicy,
 	}
 	// define the job object
-	job := &batchv1.Job{
+	js := pj.Spec.JobSpec
+	job, err := defineJob(jobName, pj.Namespace, js.Image,
+		js.ActiveDeadlineSeconds, js.BackoffLimit, js.TTLSecondsAfterFinished, js.TerminationGracePeriodSeconds,
+		volumes,
+		[]corev1.Container{initContainer},
+		jobContainer,
+		js.ServiceAccountName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the ownerRef for the Job
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+	if err := ctrl.SetControllerReference(pj, job, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	// create the cronjob
+	log(
+		"Creating a new Job",
+		"Job.Namespace", job.Namespace,
+		"Job.Name", job.Name,
+	)
+	if err := CreateOrUpdate(r, r, ctx, log, job, &batchv1.Job{}); err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+func defineJob(
+	jobName string,
+	namespace string,
+	image string,
+	activeDeadlineSeconds *int64,
+	backoffLimit *int32,
+	ttlSecondsAfterFinished *int32,
+	terminationGracePeriodSeconds *int64,
+	volumes []corev1.Volume,
+	initContainers []corev1.Container,
+	jobContainer corev1.Container,
+	serviceAccountName string,
+) (*batchv1.Job, error) {
+	var one int32 = 1
+	nonIndexed := batchv1.NonIndexedCompletion
+	var noSuspend bool = false
+	replaceAfterFailed := batchv1.Failed
+
+	// the labels to be attached to job
+	jobLabels := map[string]string{
+		"app.kubernetes.io/name":       "PipelineSchedule",
+		"app.kubernetes.io/instance":   jobName,
+		"app.kubernetes.io/version":    "v1",
+		"app.kubernetes.io/part-of":    "pipeline-operator",
+		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
+	}
+
+	// the labels attached to pod
+	// the labels to be attached to the pod
+	imageRepoClassLabel := "breuninger.de/image-repo-class"
+	repoClasses := [][]string{
+		{"europe-west3-docker.pkg.dev/breuni-team-admin-ace/", "trusted"},
+		{"europe-west3-docker.pkg.dev/breuni-team-admin-", "tenant"},
+	}
+	imageRepoClass := determineRepoClass(repoClasses, image)
+	if imageRepoClass == nil {
+		return nil, errors.New("Docker repository for payload image was not found in whitelist")
+	}
+	podLabels := map[string]string{
+		"app.kubernetes.io/name":       "PipelineJob",
+		"app.kubernetes.io/instance":   jobName,
+		"app.kubernetes.io/version":    "v1",
+		"app.kubernetes.io/part-of":    "pipeline-operator",
+		"app.kubernetes.io/created-by": "controller-manager", // TODO should we change this?
+		imageRepoClassLabel:            *imageRepoClass,
+	}
+
+	nodeSelector := map[string]string{
+		"topology.kubernetes.io/zone": "europe-west3-b",
+	}
+
+	res := batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,
-			Namespace: pj.Namespace,
+			Namespace: namespace,
 			Labels:    jobLabels,
 		},
 		Spec: batchv1.JobSpec{
 			Parallelism:             &one,
 			Completions:             &one,
-			ActiveDeadlineSeconds:   pj.Spec.JobSpec.ActiveDeadlineSeconds,
-			BackoffLimit:            pj.Spec.JobSpec.BackoffLimit,
-			TTLSecondsAfterFinished: pj.Spec.JobSpec.TTLSecondsAfterFinished,
+			ActiveDeadlineSeconds:   activeDeadlineSeconds,
+			BackoffLimit:            backoffLimit,
+			TTLSecondsAfterFinished: ttlSecondsAfterFinished,
 			CompletionMode:          &nonIndexed,
 			Suspend:                 &noSuspend,
 			PodReplacementPolicy:    &replaceAfterFailed,
@@ -195,17 +241,17 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 				},
 				Spec: corev1.PodSpec{
 					Volumes:                       volumes,
-					InitContainers:                []corev1.Container{initContainer},
+					InitContainers:                initContainers,
 					Containers:                    []corev1.Container{jobContainer},
 					EphemeralContainers:           nil,
 					RestartPolicy:                 corev1.RestartPolicyOnFailure,
-					TerminationGracePeriodSeconds: pj.Spec.JobSpec.TerminationGracePeriodSeconds,
+					TerminationGracePeriodSeconds: terminationGracePeriodSeconds,
 					// using same TTL on pod level, needed for ResourceQuota reasons, see also https://stackoverflow.com/questions/53506010/kubernetes-difference-between-activedeadlineseconds-in-job-and-pod
-					ActiveDeadlineSeconds:        pj.Spec.JobSpec.ActiveDeadlineSeconds,
+					ActiveDeadlineSeconds:        activeDeadlineSeconds,
 					DNSPolicy:                    corev1.DNSClusterFirst, // TODO
 					DNSConfig:                    nil,                    // TODO
 					NodeSelector:                 nodeSelector,
-					ServiceAccountName:           pj.Spec.JobSpec.ServiceAccountName,
+					ServiceAccountName:           serviceAccountName,
 					AutomountServiceAccountToken: nil, // TODO
 					HostNetwork:                  false,
 					HostPID:                      false,
@@ -236,24 +282,7 @@ func (r *PipelineJobReconciler) CreateJob(ctx context.Context, log func(string, 
 			},
 		},
 	}
-
-	// Set the ownerRef for the Job
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
-	if err := ctrl.SetControllerReference(pj, job, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	// create the cronjob
-	log(
-		"Creating a new Job",
-		"Job.Namespace", job.Namespace,
-		"Job.Name", job.Name,
-	)
-	if err := CreateOrUpdate(r, r, ctx, log, job, &batchv1.Job{}); err != nil {
-		return nil, err
-	}
-
-	return job, nil
+	return &res, nil
 }
 
 func determineRepoClass(classes [][]string, image string) *string {
